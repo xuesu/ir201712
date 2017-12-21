@@ -1,0 +1,4 @@
+API:
+  app_name: demo
+  host: 0.0.0.0 # DO NOT change, except only data from specific host needs to be listen
+  port: 8888
