@@ -16,6 +16,7 @@ class DataSourceHolder(object):
     """
     Aims to balance mysql & sparksql, but contains only mysql now.
     """
+
     def __init__(self, testing=False):
         self.mysql_datasource = datasources.mysql_datasource.MySQLDataSource(testing)
 
@@ -37,8 +38,11 @@ class DataSourceHolder(object):
     def drop_mysql_all_tables(self):
         self.mysql_datasource.drop_all_tables()
 
-    def find_news_list(self, session, filter_by=None):
-        return self.mysql_datasource.find_news_list(session, filter_by)
+    def find_news_list(self, session, filter_by_condition=None):
+        return self.mysql_datasource.find_news_list(session, filter_by_condition)
 
-    def find_news_by_id(self, session, news_id):
-        return self.mysql_datasource.find_news_by_id(session, news_id)
+    def find_news_by_source_id(self, session, source_id):
+        return self.mysql_datasource.find_news_by_source_id(session, source_id)
+
+    def find_news_plain_text(self, session, filter_by_condition=None):
+        return self.mysql_datasource.find_news_plain_text(session, filter_by_condition)

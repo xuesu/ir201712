@@ -23,3 +23,24 @@ class IRBaseException(Exception):
             self.status_code = 300
         else:
             self.status_code = status_code
+
+
+class InvalidParameterIRException(IRBaseException):
+    def __init__(self, func, param_name, valid_type, actual_value):
+        message = "{}: Param {} should receive an instance of {}, but got {} of type {}.".format(func, param_name,
+                                                                                                 valid_type,
+                                                                                                 actual_value,
+                                                                                                 type(actual_value))
+        super(InvalidParameterIRException, self).__init__(message)
+        self.func = func
+        self.param_name = param_name
+        self.valid_type = valid_type
+        self.actual_value = actual_value
+
+
+class RequriedParameterEmpty(IRBaseException):
+    def __init__(self, func, param_name):
+        message = "{}: Param {} is None.".format(func, param_name)
+        super(RequriedParameterEmpty, self).__init__(message)
+        self.func = func
+        self.param_name = param_name

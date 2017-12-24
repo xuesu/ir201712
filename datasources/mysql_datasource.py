@@ -3,13 +3,15 @@
 @author: xuesu
 
 """
+import pandas
 import sqlalchemy
 import sqlalchemy.orm
 
 import config.config_manager
 import entities
-import entities.news    # essential to create all tables
+import entities.news  # essential to create all tables
 import entities.review
+import entities.words
 
 datasource_config = config.config_manager.ConfigManager().datasource_config
 
@@ -19,6 +21,8 @@ class MySQLDataSource(object):
         self.testing = testing
         self.database_name = datasource_config.test_database_name if testing else datasource_config.database_name
         self.engine = self.connect()
+        if datasource_config.rebuild:
+            self.drop_all_tables()
         self.create_all_tables()
         self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.scope_session_maker = sqlalchemy.orm.scoped_session(self.session_maker)
@@ -63,9 +67,16 @@ class MySQLDataSource(object):
             query = query.filter_by(**filter_by_condition)
         return query.all()
 
-    def find_news_by_id(self, session, news_id):
-        news_list = self.find_news_list(session, {"news_id": news_id})
+    def find_news_by_source_id(self, session, source_id):
+        news_list = self.find_news_list(session, {"source_id": source_id})
         if len(news_list) == 0:
             return None
         else:
             return news_list[0]
+
+    def find_news_plain_text(self, session, filter_by_condition=None):
+        query = session.query(entities.news.NewsPlain.id, entities.news.NewsPlain.title,
+                              entities.news.NewsPlain.content)
+        if filter_by_condition is not None:
+            query = query.filter_by(**filter_by_condition)
+        return pandas.read_sql_query(query.statement, self.engine)

@@ -48,7 +48,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
         """
         '获取如下数据：
             '获取新闻数据：
-                news_id:新闻id,
+                source_id:新闻id,
                 url:新闻链接,
                 title:新闻标题,
                 keywords:新闻关键词,
@@ -68,10 +68,11 @@ class SinaSpider(spiders.base_spider.BaseSpider):
         """
         news_count = 0
         # 一共要爬取的页数
-        pages_num = int(news_num / self.sina_each_page_num)
+        news_num_per_page = min(self.sina_each_page_num, news_num)
+        pages_num = int(news_num / news_num_per_page)
         for i in range(pages_num * 2):
-            logger.info('get %dth page news,each page %d news.' % (i + 1, self.sina_each_page_num))
-            page_url = self.sina_news_roll_url.format(self.sina_each_page_num, i + 1)
+            logger.info('get %dth page news,each page %d news.' % (i + 1, news_num_per_page))
+            page_url = self.sina_news_roll_url.format(news_num_per_page, i + 1)
             try:
                 # 设置headers,读取第i+1页的新闻数据
                 page = self.get_response('http://news.sina.com.cn/society/', page_url)
@@ -83,17 +84,17 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 continue
             for news in jd['result']['data']:
                 '''
-                #获取新闻信息：news_id,url,title,keywords,meida_name,abstract,time,news_content,review_num
+                #获取新闻信息：source_id,url,title,keywords,meida_name,abstract,time,news_content,review_num
                 '''
-                # 从字典拿到news_id,url,title,keywords,media_name,abstract
+                # source_id,url,title,keywords,media_name,abstract
                 # time、news_content、review_num到新闻正文页获取
                 news_count += 1
                 # ext2="sh:comos-fynffnz3077632:0"
                 # 提取出comos-fynffnz3077632与相关新闻id格式保持一致
                 news_obj = entities.news.NewsPlain()
                 try:
-                    news_obj.news_id = news['ext2'].split(':')[1]
-                    if datasource_holder.find_news_by_id(self.session, news_id=news_obj.news_id):
+                    news_obj.source_id = news['ext2'].split(':')[1]
+                    if datasource_holder.find_news_by_source_id(self.session, source_id=news_obj.source_id):
                         continue
                     news_obj.url = news['url']
                     news_obj.title = news['title']
@@ -122,28 +123,28 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 '''
                 #获取相关新闻id :  related_id
                 '''
-                news_obj.related_id = ''
-                # 翻页获取related_id
-                for offset in [0, 5, 10]:  # 0,5,10……
-                    related_page_url = self.sina_related_news_roll_url.format(news_obj.url, offset)
-                    try:
-                        related_page = self.get_response(news_obj.url, related_page_url)
-                        related_jd = json.loads(related_page[related_page.index('{'):related_page.rindex('}') + 1])
-                        news_list = related_jd['result']['data']
-                        if len(news_list) < 1:
-                            break
-                        for news in news_list:
-                            # 只提取相关的文本新闻
-                            if news['docid'][:5] != 'comos':
-                                continue
-                            news_obj.related_id += news['docid'].replace(':', '-') + ','
-                            logger.info("Crawling Related Page Success: {}".format(related_page_url))
-                    except Exception as e:
-                        # 相关新闻出错直接忽略
-                        logger.warning("Crawling Related Page Failed: {}".format(related_page_url))
-                news_obj.related_id = news_obj.related_id[0:-1]
+                # news_obj.related_id = ''
+                # # 翻页获取related_id
+                # for offset in [0, 5, 10]:  # 0,5,10……
+                #     related_page_url = self.sina_related_news_roll_url.format(news_obj.url, offset)
+                #     try:
+                #         related_page = self.get_response(news_obj.url, related_page_url)
+                #         related_jd = json.loads(related_page[related_page.index('{'):related_page.rindex('}') + 1])
+                #         news_list = related_jd['result']['data']
+                #         if len(news_list) < 1:
+                #             break
+                #         for news in news_list:
+                #             # 只提取相关的文本新闻
+                #             if news['docid'][:5] != 'comos':
+                #                 continue
+                #             news_obj.related_id += news['docid'].replace(':', '-') + ','
+                #             logger.info("Crawling Related Page Success: {}".format(related_page_url))
+                #     except Exception as e:
+                #         # 相关新闻出错直接忽略
+                #         logger.warning("Crawling Related Page Failed: {}".format(related_page_url))
+                # news_obj.related_id = news_obj.related_id[0:-1]
                 news_obj.review_num = 0
-                review_url = self.sina_review_roll_url.format(news_obj.news_id, self.max_reviews_num)
+                review_url = self.sina_review_roll_url.format(news_obj.source_id, self.max_reviews_num)
                 try:
                     '''
                     #获取评论信息：user_id,user_name,area,review_content,time,agree
@@ -161,9 +162,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                         review_obj.content = review['content']
                         review_obj.time = review['time']
                         review_obj.agree = review['agree']
-                        review_obj.news_id = news_obj.news_id
-                        if review_obj.news_id == news_obj.news_id:
-                            news_obj.reviews.append(review_obj)
+                        news_obj.reviews.append(review_obj)
                     logger.info("Crawling Review Page Success: {}".format(review_url))
                 except Exception as e:
                     # 评论出错直接忽略
@@ -172,5 +171,3 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 datasource_holder.upsert_news(self.session, news_obj)
             if news_count >= news_num:
                 break
-
-SinaSpider().get_news(30)

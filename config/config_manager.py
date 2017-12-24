@@ -8,6 +8,7 @@ Example:
 """
 
 import os
+import pyspark
 import yaml
 
 import utils.singleton
@@ -39,6 +40,13 @@ class DataSourceConfig(object):
         self.pool_size = int(config_data['pool_size'])
         self.max_overflow = int(config_data['max_overflow'])
         self.timeout = int(config_data['timeout'])
+        self.rebuild = config_data['rebuild']
+
+
+class SparkConfig(object):
+    def __init__(self, config_data):
+        self.conf = pyspark.SparkConf().setAppName(config_data['app_name']).setMaster(config_data['master'])
+        self.context = pyspark.SparkContext(conf=self.conf)
 
 
 @utils.singleton.Singleton
@@ -55,3 +63,4 @@ class ConfigManager(object):
             config_data = yaml.load(fin)
             self.APIconfig = APIConfig(config_data['API'])
             self.datasource_config = DataSourceConfig(config_data['datasource'])
+            self.spark_config = SparkConfig(config_data['spark'])

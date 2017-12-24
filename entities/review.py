@@ -25,7 +25,7 @@ class ReviewPlain(entities.SQLALCHEMY_BASE):
         toutiao = 3
 
     review_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    news_id = sqlalchemy.Column(sqlalchemy.String(30), sqlalchemy.ForeignKey('news_plain.news_id'), nullable=False)
+    news_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('news_plain.id'), nullable=False)
     user_id = sqlalchemy.Column(sqlalchemy.String(30))
     user_name = sqlalchemy.Column(sqlalchemy.String(50))
     area = sqlalchemy.Column(sqlalchemy.String(20))

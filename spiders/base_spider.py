@@ -5,7 +5,6 @@
 """
 
 import abc
-import datetime
 import time
 import random
 import requests
@@ -80,4 +79,3 @@ class BaseSpider(abc.ABC):
     @abc.abstractclassmethod
     def get_news(self, news_num):
         pass
-
