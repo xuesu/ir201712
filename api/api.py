@@ -5,6 +5,8 @@
 """
 
 import flask
+import threading
+import traceback
 
 import config.config_manager
 import exceptions.base_exception
@@ -30,12 +32,34 @@ def exception_handler(method):
         except Exception as e:
             resp = flask.jsonify({"err_message": ERR_MESSAGE_HTTP_500.format(type(e))})
             resp.status_code = 500
-            logger.error(ERR_MESSAGE_HTTP_500, exc_info=True)
+            logger.error(ERR_MESSAGE_HTTP_500.format(type(e)), exc_info=True)
         return resp
 
     return wrapper
 
 
+def backdoor():
+    """
+    Aim to execute refresh.
+    :return:
+    """
+    command = ''
+    while True:
+        tmp = input()
+        command += tmp
+        if command == 'STOP BACKDOOR;':
+            break
+        elif command.endswith(';'):
+            try:
+                command = command[:-1]
+                exec(command)
+            except Exception as e:
+                traceback.print_exc()
+            command = ''
+
+
 def run():
+    th = threading.Thread(target=backdoor)
+    th.start()
     # disable autoreload to enable TRUE DEBUG!
     app.run(host=APIconfig.host, port=APIconfig.port, debug=False, use_reloader=False, use_debugger=False)

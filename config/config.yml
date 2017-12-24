@@ -2,3 +2,15 @@ API:
   app_name: demo
   host: 0.0.0.0 # DO NOT change, except only data from specific host needs to be listen
   port: 8888
+datasource:
+  host: localhost
+  port: 0
+  user: IRDBA
+  password: complexpwd
+  database_name: ir
+  test_database_name: ir_test
+  pool_size: 5
+  max_overflow: 10
+  timeout: 60
+myspark:
+  

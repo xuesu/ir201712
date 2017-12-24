@@ -21,12 +21,24 @@ config_fname = os.path.join(config_dir, "config.yml")
 class APIConfig(object):
     def __init__(self, config_data):
         self.app_name = config_data['app_name']
-        self.port = int(config_data["port"])
         self.host = config_data["host"]
-        print(self.app_name, self.port, self.host)
+        self.port = int(config_data["port"])
 
     def get_app_name(self):
         return self.app_name
+
+
+class DataSourceConfig(object):
+    def __init__(self, config_data):
+        self.host = config_data["host"]
+        self.port = int(config_data["port"])
+        self.user = config_data['user']
+        self.password = config_data['password']
+        self.database_name = config_data['database_name']
+        self.test_database_name = config_data['test_database_name']
+        self.pool_size = int(config_data['pool_size'])
+        self.max_overflow = int(config_data['max_overflow'])
+        self.timeout = int(config_data['timeout'])
 
 
 @utils.singleton.Singleton
@@ -42,3 +54,4 @@ class ConfigManager(object):
         with open(config_fname) as fin:
             config_data = yaml.load(fin)
             self.APIconfig = APIConfig(config_data['API'])
+            self.datasource_config = DataSourceConfig(config_data['datasource'])

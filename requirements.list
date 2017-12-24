@@ -2,3 +2,6 @@ pyyaml
 pyspark
 Flask
 nose
+pymysql
+sqlalchemy
+simplejson
