@@ -42,7 +42,6 @@ class SinaSpider(spiders.base_spider.BaseSpider):
             'Connection': 'keep-alive',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36'
         }
-        self.session = datasource_holder.create_mysql_session()
 
     def get_news(self, news_num):
         """
@@ -66,6 +65,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 time:评论时间,
                 agree:点赞数
         """
+        session = datasource_holder.create_mysql_session()
         news_count = 0
         # 一共要爬取的页数
         news_num_per_page = min(self.sina_each_page_num, news_num)
@@ -94,7 +94,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 news_obj = entities.news.NewsPlain()
                 try:
                     news_obj.source_id = news['ext2'].split(':')[1]
-                    if datasource_holder.find_news_by_source_id(self.session, source_id=news_obj.source_id):
+                    if datasource_holder.find_news_by_source_id(session, source_id=news_obj.source_id):
                         continue
                     news_obj.url = news['url']
                     news_obj.title = news['title']
@@ -168,6 +168,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                     # 评论出错直接忽略
                     logger.warning("Crawling Review Page Failed: {}".format(review_url))
                 utils.utils.remove_wild_char_in_news(news_obj)
-                datasource_holder.upsert_news(self.session, news_obj)
+                datasource_holder.upsert_news(session, news_obj)
             if news_count >= news_num:
                 break
+        datasource_holder.close_mysql_session(session)

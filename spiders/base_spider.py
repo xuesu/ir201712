@@ -79,3 +79,4 @@ class BaseSpider(abc.ABC):
     @abc.abstractclassmethod
     def get_news(self, news_num):
         pass
+
