@@ -7,10 +7,10 @@ import threading
 
 import exceptions.base_exception
 import spiders.sina_spider
-import utils.singleton
+import utils.decorator
 
 
-@utils.singleton.Singleton
+@utils.decorator.Singleton
 class SpiderManager(object):
     def __init__(self):
         self.spiders = {

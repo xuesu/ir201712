@@ -40,7 +40,9 @@ class NewsPlain(entities.SQLALCHEMY_BASE):
     source = sqlalchemy.Column(sqlalchemy.Enum(SourceEnum))
     media_name = sqlalchemy.Column(sqlalchemy.String(20))
     url = sqlalchemy.Column(sqlalchemy.String(150))
+    word_num = sqlalchemy.Column(sqlalchemy.Integer)
     reviews = sqlalchemy.orm.relationship("ReviewPlain", cascade="all")
+    posting_list = sqlalchemy.orm.relationship("WordPosting", back_populates="news", cascade="all")
     # The related article may not store in the db, better not to use it.
     related_id = sqlalchemy.Column(sqlalchemy.Text)
 

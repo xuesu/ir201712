@@ -19,21 +19,20 @@ import entities
 class WordPosting(entities.SQLALCHEMY_BASE):
     __tablename__ = 'word_posting'
 
-    class FieldEnum(enum.Enum):
-        title = 1
-        content = 2
-
     word_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('word.id'), primary_key=True)
     news_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('news_plain.id'), primary_key=True)
     tf = sqlalchemy.Column(sqlalchemy.Integer)
-    positions = sqlalchemy.Column(sqlalchemy.JSON)
-    field_id = sqlalchemy.Column(sqlalchemy.Enum(FieldEnum))
+    title_positions = sqlalchemy.Column(sqlalchemy.JSON)
+    content_positions = sqlalchemy.Column(sqlalchemy.JSON)
+    news = sqlalchemy.orm.relationship("NewsPlain", back_populates="posting_list", cascade="all")
+    word = sqlalchemy.orm.relationship("Word", back_populates="posting_list", cascade="all")
 
 
 class Word(entities.SQLALCHEMY_BASE):
     __tablename__ = 'word'
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     text = sqlalchemy.Column(sqlalchemy.String(20), unique=True, nullable=False)
     pos = sqlalchemy.Column(sqlalchemy.String(5))
     df = sqlalchemy.Column(sqlalchemy.Integer)
-    posting_lists = sqlalchemy.orm.relationship("WordPosting", cascade="all")
+    cf = sqlalchemy.Column(sqlalchemy.Integer)
+    posting_list = sqlalchemy.orm.relationship("WordPosting", back_populates="word", cascade="all")

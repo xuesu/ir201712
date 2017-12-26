@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 """
 @author: xuesu
+Do not import config.config_manager here.
 
 """
 
@@ -33,3 +34,5 @@ def remove_wild_char_in_news(news):
 
 def remove_wild_char_in_review(review):
     review.content = remove_wild_char(review.content)
+
+

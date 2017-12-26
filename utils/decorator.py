@@ -3,6 +3,7 @@
 @author: xuesu
 
 """
+import pyspark
 
 
 class Singleton(object):
@@ -23,3 +24,11 @@ class Singleton(object):
         if self.__instance is None:
             self.__instance = self.__wrapped_cls(*args, **kwargs)
         return self.__instance
+
+
+def run_executor_node(func):
+    def wrapper(*args, **kwargs):
+        import config.config_manager
+        config.config_manager.ConfigManager().driver_mode = False
+        return func(*args, **kwargs)
+    return wrapper

@@ -12,6 +12,7 @@ import unittest
 import datasources.datasource
 import entities.news
 import entities.review
+import entities.words
 
 
 class DataSourceTest(unittest.TestCase):
@@ -33,7 +34,7 @@ class DataSourceTest(unittest.TestCase):
             abstract="原标题：我伙呆！断臂“老司机”高速上驾宝马狂飙，副驾上还坐着他老婆",
             content="原标题：我伙呆！断臂“老司机”高速上驾宝马狂飙，副驾上还坐着他老婆\n一个失去双手小臂的大叔，却开着宝马带上妻子闯天涯。...",
             time=datetime.datetime.strptime("2017/10/30 12:28:54", "%Y/%m/%d %H:%M:%S"),
-            review_num=0)
+            review_num=1)
         self.review_sample = entities.review.ReviewPlain(
             user_id=3241538043,
             user_name="Adams_7276",
@@ -42,6 +43,10 @@ class DataSourceTest(unittest.TestCase):
             time=datetime.datetime.strptime("2017-10-30 11:31:05", "%Y-%m-%d %H:%M:%S"),
             agree=0)
         self.news_sample.reviews = [self.review_sample]
+        self.word_posting_sample = entities.words.WordPosting(tf=3,
+                                                              title_positions=[1], content_positions=[1, 5])
+        self.word_sample = entities.words.Word(text="江苏", pos="N", df=3)
+        self.word_sample.posting_list = [self.word_posting_sample]
 
     def tearDown(self):
         self.holder.close_mysql_session(self.session)
@@ -52,6 +57,10 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(len(news_list), 0)
 
     def test_upsert_news(self):
+        """
+        ugly, but simple
+        :return:
+        """
         self.holder.upsert_news(self.session, self.news_sample)
         news_list = self.holder.find_news_list(self.session)
         self.assertEqual(news_list[0].source_id, self.news_sample.source_id)
@@ -71,3 +80,41 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(texts_df.shape, (1, 3))
         self.assertEqual(texts_df.title[0], self.news_sample.title)
         self.assertEqual(texts_df.content[0], self.news_sample.content)
+
+    def test_find_word_list(self):
+        word_list = self.holder.find_word_list(self.session)
+        self.assertEqual(len(word_list), 0)
+
+    def test_upsert_word(self):
+        """
+        ugly, but simple
+        :return:
+        """
+        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.word_posting_sample.news_id = self.news_sample.id
+        self.holder.upsert_word(self.session, self.word_sample)
+        word_list = self.holder.find_word_list(self.session)
+        self.assertEqual(word_list[0].text, self.word_sample.text)
+        self.assertIsNotNone(word_list[0].posting_list[0].word_id)
+        self.assertListEqual(word_list[0].posting_list[0].title_positions, self.word_posting_sample.title_positions)
+
+    def test_find_word_by_text(self):
+        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.word_posting_sample.news_id = self.news_sample.id
+        self.holder.upsert_word(self.session, self.word_sample)
+        word2 = self.holder.find_word_by_text(self.session, self.word_sample.text)
+        self.assertEqual(word2.df, self.word_sample.df)
+
+    def test_find_word_posting_list(self):
+        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.word_posting_sample.news_id = self.news_sample.id
+        self.holder.upsert_word(self.session, self.word_sample)
+        word_posting_list = self.holder.find_word_posting_list(self.session)
+        self.assertEqual(word_posting_list[0].tf, self.word_posting_sample.tf)
+
+    def test_find_word_posting_list_by_word_id(self):
+        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.word_posting_sample.news_id = self.news_sample.id
+        word = self.holder.upsert_word(self.session, self.word_sample)
+        word_posting_list = self.holder.find_word_posting_list_by_word_id(self.session, word.id)
+        self.assertEqual(word_posting_list[0].tf, self.word_posting_sample.tf)

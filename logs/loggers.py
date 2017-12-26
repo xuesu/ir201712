@@ -10,10 +10,10 @@ import logging.config
 import logging.handlers
 
 import config.config_manager
-import utils.singleton
+import utils.decorator
 
 
-@utils.singleton.Singleton
+@utils.decorator.Singleton
 class LoggersHolder(object):
     """
     This class is actually nonsense, just to prevent multiple logger settings overlap.

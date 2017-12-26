@@ -10,6 +10,7 @@ import traceback
 
 import config.config_manager
 import exceptions.base_exception
+import functions.suggest
 import logs.loggers
 
 logger = logs.loggers.LoggersHolder().get_logger('api')
@@ -56,6 +57,13 @@ def backdoor():
             except Exception as e:
                 traceback.print_exc()
             command = ''
+
+
+@app.route("/suggest", method='GET')
+@exception_handler
+def suggest():
+    search_text = flask.request.args.get("search_text")
+    return functions.suggest.suggest_autocomplete(search_text), 200
 
 
 def run():

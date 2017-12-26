@@ -12,8 +12,15 @@ datasource:
   pool_size: 5
   max_overflow: 10
   timeout: 60
-  rebuild: True
+  rebuild: False
 spark:
   master: local
   app_name: ir
-  
+sorter:
+  bm25:
+    k: 1.5
+    b: 0.75
+    title_bias: 2
+functions:
+  suggest:
+    number: 3

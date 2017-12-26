@@ -11,7 +11,7 @@ import os
 import pyspark
 import yaml
 
-import utils.singleton
+import utils.decorator
 
 cur_dir = os.path.realpath(__file__)[:-len("config/config_manager.py")]
 config_dir = os.path.join(cur_dir, "config")
@@ -46,21 +46,39 @@ class DataSourceConfig(object):
 class SparkConfig(object):
     def __init__(self, config_data):
         self.conf = pyspark.SparkConf().setAppName(config_data['app_name']).setMaster(config_data['master'])
-        self.context = pyspark.SparkContext(conf=self.conf)
+        self._context = None
+
+    def _get_context(self):
+        if self._context is None:
+            self._context = pyspark.SparkContext(conf=self.conf)
+        return self._context
+
+    def _set_context(self, context):
+        self.context = context
+
+    context = property(_get_context, _set_context)
 
 
-@utils.singleton.Singleton
+class FunctionsConfig(object):
+    def __init__(self, config_data):
+        self.suggest_num = int(config_data['suggest']['number'])
+
+
+@utils.decorator.Singleton
 class ConfigManager(object):
     """
     ConfigManager reads config.yml and generate config instance.
     Example:
         port = config_manager.ConfigManager().APIconfig.port
     """
+    b_datasource_config = None
 
-    def __init__(self):
+    def __init__(self, driver_mode=True):
         assert (os.path.isfile(config_fname)), "Couldn't find " + config_fname
+        self.driver_mode = driver_mode
         with open(config_fname) as fin:
             config_data = yaml.load(fin)
             self.APIconfig = APIConfig(config_data['API'])
-            self.datasource_config = DataSourceConfig(config_data['datasource'])
             self.spark_config = SparkConfig(config_data['spark'])
+            self.datasource_config = DataSourceConfig(config_data['datasource'])
+            self.functions_config = FunctionsConfig(config_data['functions'])
