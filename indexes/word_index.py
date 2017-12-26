@@ -112,8 +112,3 @@ class WordIndex(object):
 
     def collect(self, s=''):
         return [self.vocab[word_text] for word_text in self.tree.collect(s)]
-
-
-index = WordIndex()
-index.build()
-index.collect()
