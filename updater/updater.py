@@ -37,8 +37,6 @@ class Updater(object):
 
     def prepossess(self):
         self.segment()
-        self.update_statistics()
-
 
     def update(self, num=100):
         self.crawl(num)

@@ -35,7 +35,7 @@ class MySQLDataSource(object):
 
     def connect(self):
         engine = sqlalchemy.create_engine(
-            "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(
+            "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4".format(
                 datasource_config.user, datasource_config.password,
                 datasource_config.host, datasource_config.port,
                 self.database_name
@@ -85,7 +85,11 @@ class MySQLDataSource(object):
         return pandas.read_sql_query(query.statement, self.engine)
 
     def upsert_word(self, session, word):
-        word = session.merge(word)
+        if isinstance(word, list):
+            for w in word:
+                session.merge(w)
+        else:
+            word = session.merge(word)
         session.commit()
         return word
 
@@ -103,6 +107,10 @@ class MySQLDataSource(object):
             return None
         else:
             return word_list[0]
+
+    def delete_word(self, session, word):
+        session.delete(word)
+        session.commit()
 
     def find_word_posting_list(self, session, filter_by_condition):
         query = session.query(entities.words.WordPosting)

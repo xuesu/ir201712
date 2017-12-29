@@ -45,7 +45,7 @@ class DataSourceTest(unittest.TestCase):
         self.news_sample.reviews = [self.review_sample]
         self.word_posting_sample = entities.words.WordPosting(tf=3,
                                                               title_positions=[1], content_positions=[1, 5])
-        self.word_sample = entities.words.Word(text="江苏", pos="N", df=3)
+        self.word_sample = entities.words.Word(text="江苏", pos="N", df=3, cf=3)
         self.word_sample.posting_list = [self.word_posting_sample]
 
     def tearDown(self):
@@ -104,6 +104,13 @@ class DataSourceTest(unittest.TestCase):
         self.holder.upsert_word(self.session, self.word_sample)
         word2 = self.holder.find_word_by_text(self.session, self.word_sample.text)
         self.assertEqual(word2.df, self.word_sample.df)
+
+    def test_delete_word(self):
+        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.word_posting_sample.news_id = self.news_sample.id
+        word2 = self.holder.upsert_word(self.session, self.word_sample)
+        self.holder.delete_word(self.session, word2)
+        self.assertEqual(self.holder.find_word_by_text(self.session, self.word_sample.text), None)
 
     def test_find_word_posting_list(self):
         self.news_sample = self.holder.upsert_news(self.session, self.news_sample)

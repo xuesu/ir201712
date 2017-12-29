@@ -3,6 +3,7 @@
 @author: xuesu
 
 """
+import datetime
 import pyspark
 
 
@@ -31,4 +32,17 @@ def run_executor_node(func):
         import config.config_manager
         config.config_manager.ConfigManager().driver_mode = False
         return func(*args, **kwargs)
+
+    return wrapper
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        print("Starting ", func)
+        start_time = datetime.datetime.now()
+        ret = func(*args, **kwargs)
+        end_time = datetime.datetime.now()
+        print("Ended ", func, " Spending ", (end_time - start_time).total_seconds(), "seconds")
+        return ret
+
     return wrapper

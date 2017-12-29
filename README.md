@@ -12,9 +12,9 @@ A simple information retrieval system using **python3** and spark.
 ### mysql
 4. install mysql
 	- In Ubuntu: `sudo apt install mysql-server`
-5. open mysql terminal:
-    - Create a new db to avoid database-scale change in program: `CREATE DATABASE ir;`
-    - Then create a test db: `CREATE DATABASE ir_test;`
+5. open mysql terminal: (Attention, we should always use this charset **'UTF8mb4'**)
+    - Create a new db to avoid database-scale change in program: `CREATE DATABASE ir character set UTF8mb4 collate utf8mb4_bin;`
+    - Then create a test db: `CREATE DATABASE ir_test character set UTF8mb4 collate utf8mb4_bin;`
     - Create a new user: `CREATE USER 'IRDBA'@'localhost' IDENTIFIED BY 'complexpwd';`
     - Grant privilege to the user: `GRANT ALL ON ir.* TO 'IRDBA'@'localhost';GRANT ALL ON ir_test.* TO 'IRDBA'@'localhost';`
     

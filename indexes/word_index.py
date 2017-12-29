@@ -4,31 +4,7 @@
 """
 
 import datasources.datasource
-
-
-class RegisterTreeNode(object):
-    def __init__(self):
-        self.children = dict()
-        self.eqnode = None
-
-    def __del__(self):
-        self.stop()
-
-    def step(self, s):
-        node = self
-        ind = len(s)
-        for c in s[-1: -len(s): -1]:
-            nxt_node = node.children.get(c, None)
-            if nxt_node is None:
-                return ind, node
-            node = nxt_node
-            ind -= 1
-        return ind, node
-
-    def stop(self):
-        for child in self.children:
-            del child
-
+import utils.decorator
 
 class Node(object):
     def __init__(self):
@@ -68,25 +44,32 @@ class Node(object):
         else:
             return ans
 
+    def add_tostr(self):
+        tmp = ['{}'.format(self.leaf)]
+        for c in self.children:
+            tmp.append('%c: {%s}'% (c, self.children[c].add_tostr()))
+        return ','.join(tmp)
+
+    def add_replace_or_register(self, register):
+        for c in self.children:
+            child = self.children[c]
+            if len(child.children.keys()) > 0:
+                child.add_replace_or_register(register)
+                child_str = child.add_tostr()
+                if child_str in register:
+                    self.children[c] = register[child_str]
+                    del child
+                else:
+                    register[child_str] = child
+
     def add(self, s, register):
         ind, node = self.step(s)
-        ind2, node2 = register.step(s[ind + 1:])
-        ind2 += ind + 1
-        new_nodes = []
-        for c in s[ind: ind2 - 1]:
+        if len(node.children.keys()) > 0:
+            node.add_replace_or_register(register)
+        for c in s[ind:]:
             node.children[c] = Node()
             node = node.children[c]
-            new_nodes.append(node)
-        if ind2 != len(s):
-            node.children[s[ind2 - 1]] = node2.eqnode
-        else:
-            node.children[s[-1]] = Node()
-            node.children[s[-1]].leaf = True
-        for i, c in enumerate(s[-1 - ind:- ind2: -1]):
-            node2.children[c] = RegisterTreeNode()
-            node2 = node2.children[c]
-            node2.eqnode = new_nodes[-1 - i]
-        del new_nodes
+        node.leaf = True
 
 
 class WordIndex(object):
@@ -99,16 +82,18 @@ class WordIndex(object):
         self.tree = None
         self.vocab = None
 
+    @utils.decorator.timer
     def build(self):
         session = self.datasource.create_mysql_session()
         words = self.datasource.find_word_list(session, order_by_condition="text")
         self.datasource.close_mysql_session(session)
         self.tree = Node()
-        register = RegisterTreeNode()
+        register = dict()
         for word in words:
             self.tree.add(word.text, register)
         del register
         self.vocab = {word.text: word for word in words}
 
+    @utils.decorator.timer
     def collect(self, s=''):
         return [self.vocab[word_text] for word_text in self.tree.collect(s)]

@@ -57,6 +57,9 @@ class DataSourceHolder(object):
     def find_word_by_text(self, session, text):
         return self.mysql_datasource.find_word_by_text(session, text)
 
+    def delete_word(self, session, word):
+        self.mysql_datasource.delete_word(session, word)
+
     def find_word_posting_list(self, session, filter_by_condition=None):
         return self.mysql_datasource.find_word_posting_list(session, filter_by_condition)
 
