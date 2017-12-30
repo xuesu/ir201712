@@ -7,23 +7,22 @@ be lazy, be in one script and use a standalone schema to test.
 
 import datetime
 import pandas
-import unittest
 
-import datasources.datasource
+import datasources
 import entities.news
 import entities.review
 import entities.words
+import test
 
 
-class DataSourceTest(unittest.TestCase):
+class DataSourceTest(test.TestCase):
     def setUp(self):
         """
         In fact, it is informal way to build a TestCase like this.
         :return:
         """
-        self.holder = datasources.datasource.DataSourceHolder(testing=True)
-        self.holder.create_mysql_all_tables()
-        self.session = self.holder.create_mysql_session()
+        datasources.get_db().recreate_all_tables()
+        self.session = datasources.get_db().create_session()
         self.news_sample = entities.news.NewsPlain(
             source=entities.news.NewsPlain.SourceEnum.sina,
             source_id="comos-fynfvar5143551",
@@ -49,79 +48,79 @@ class DataSourceTest(unittest.TestCase):
         self.word_sample.posting_list = [self.word_posting_sample]
 
     def tearDown(self):
-        self.holder.close_mysql_session(self.session)
-        self.holder.drop_mysql_all_tables()
+        datasources.get_db().close_session(self.session)
 
     def test_find_news_list(self):
-        news_list = self.holder.find_news_list(self.session)
+        news_list = datasources.get_db().find_news_list(self.session)
         self.assertEqual(len(news_list), 0)
 
-    def test_upsert_news(self):
+    def test_upsert_news_or_news_list(self):
         """
         ugly, but simple
         :return:
         """
-        self.holder.upsert_news(self.session, self.news_sample)
-        news_list = self.holder.find_news_list(self.session)
+        datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
+        news_list = datasources.get_db().find_news_list(self.session)
         self.assertEqual(news_list[0].source_id, self.news_sample.source_id)
         self.assertIsNotNone(news_list[0].reviews[0].news_id)
         self.assertEqual(news_list[0].reviews[0].content, self.news_sample.reviews[0].content)
 
     def test_find_news_by_source_id(self):
         news = entities.news.NewsPlain(source_id="comos-fynfvar5143551")
-        self.holder.upsert_news(self.session, news)
-        news2 = self.holder.find_news_by_source_id(self.session, news.source_id)
+        datasources.get_db().upsert_news_or_news_list(self.session, news)
+        news2 = datasources.get_db().find_news_by_source_id(self.session, news.source_id)
         self.assertEqual(news.source_id, news2.source_id)
 
     def test_find_news_plain_text(self):
-        self.holder.upsert_news(self.session, self.news_sample)
-        texts_df = self.holder.find_news_plain_text(self.session)
+        datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
+        texts_df = datasources.get_db().find_news_plain_text(self.session)
         self.assertTrue(isinstance(texts_df, pandas.DataFrame))
         self.assertEqual(texts_df.shape, (1, 3))
         self.assertEqual(texts_df.title[0], self.news_sample.title)
         self.assertEqual(texts_df.content[0], self.news_sample.content)
 
     def test_find_word_list(self):
-        word_list = self.holder.find_word_list(self.session)
+        word_list = datasources.get_db().find_word_list(self.session)
         self.assertEqual(len(word_list), 0)
 
-    def test_upsert_word(self):
+    def test_upsert_word_or_word_list(self):
         """
         ugly, but simple
         :return:
         """
-        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.news_sample = datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
         self.word_posting_sample.news_id = self.news_sample.id
-        self.holder.upsert_word(self.session, self.word_sample)
-        word_list = self.holder.find_word_list(self.session)
+        datasources.get_db().upsert_word_or_word_list(self.session, self.word_sample)
+        word_list = datasources.get_db().find_word_list(self.session)
         self.assertEqual(word_list[0].text, self.word_sample.text)
         self.assertIsNotNone(word_list[0].posting_list[0].word_id)
         self.assertListEqual(word_list[0].posting_list[0].title_positions, self.word_posting_sample.title_positions)
 
     def test_find_word_by_text(self):
-        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.news_sample = datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
         self.word_posting_sample.news_id = self.news_sample.id
-        self.holder.upsert_word(self.session, self.word_sample)
-        word2 = self.holder.find_word_by_text(self.session, self.word_sample.text)
+        datasources.get_db().upsert_word_or_word_list(self.session, self.word_sample)
+        word2 = datasources.get_db().find_word_by_text(self.session, self.word_sample.text)
         self.assertEqual(word2.df, self.word_sample.df)
 
     def test_delete_word(self):
-        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.news_sample = datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
         self.word_posting_sample.news_id = self.news_sample.id
-        word2 = self.holder.upsert_word(self.session, self.word_sample)
-        self.holder.delete_word(self.session, word2)
-        self.assertEqual(self.holder.find_word_by_text(self.session, self.word_sample.text), None)
-
-    def test_find_word_posting_list(self):
-        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
-        self.word_posting_sample.news_id = self.news_sample.id
-        self.holder.upsert_word(self.session, self.word_sample)
-        word_posting_list = self.holder.find_word_posting_list(self.session)
-        self.assertEqual(word_posting_list[0].tf, self.word_posting_sample.tf)
+        word2 = datasources.get_db().upsert_word_or_word_list(self.session, self.word_sample)
+        datasources.get_db().delete_word(self.session, word2)
+        self.assertEqual(datasources.get_db().find_word_by_text(self.session, self.word_sample.text), None)
 
     def test_find_word_posting_list_by_word_id(self):
-        self.news_sample = self.holder.upsert_news(self.session, self.news_sample)
+        self.news_sample = datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
         self.word_posting_sample.news_id = self.news_sample.id
-        word = self.holder.upsert_word(self.session, self.word_sample)
-        word_posting_list = self.holder.find_word_posting_list_by_word_id(self.session, word.id)
+        word = datasources.get_db().upsert_word_or_word_list(self.session, self.word_sample)
+        word_posting_list = datasources.get_db().find_word_posting_list_by_word_id(self.session, word.id)
         self.assertEqual(word_posting_list[0].tf, self.word_posting_sample.tf)
+
+    def test_find_word_plain_text_ordered_by_text(self):
+        word_text_samples = ["1000", "10", "001", "010", "0", "1", "01"]
+        for word_text in word_text_samples:
+            datasources.get_db().upsert_word_or_word_list(self.session, entities.words.Word(text=word_text))
+        word_texts = datasources.get_db().find_word_plain_text_ordered_by_text(self.session)
+        word_text_samples.sort()
+        self.assertListEqual(word_texts, word_text_samples)

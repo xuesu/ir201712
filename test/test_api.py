@@ -6,13 +6,13 @@ be lazy, be in one script
 """
 
 import flask
-import unittest
 
 import api.api
 import exceptions.base_exception
+import test
 
 
-class APITest(unittest.TestCase):
+class APITest(test.TestCase):
     def setUp(self):
         self.app = flask.Flask("test")
         self.app.testing = True

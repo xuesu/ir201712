@@ -2,9 +2,12 @@
 """
 @author: xuesu
 """
+import enum
 
-import datasources.datasource
+
+import datasources
 import utils.decorator
+
 
 class Node(object):
     def __init__(self):
@@ -47,7 +50,7 @@ class Node(object):
     def add_tostr(self):
         tmp = ['{}'.format(self.leaf)]
         for c in self.children:
-            tmp.append('%c: {%s}'% (c, self.children[c].add_tostr()))
+            tmp.append('%c: {%s}' % (c, self.children[c].add_tostr()))
         return ','.join(tmp)
 
     def add_replace_or_register(self, register):
@@ -72,28 +75,32 @@ class Node(object):
         node.leaf = True
 
 
-class WordIndex(object):
+class WordTextIndex(object):
     """
     A temporary solution using Minimal Acyclic Finite State Automata
     """
 
     def __init__(self):
-        self.datasource = datasources.datasource.DataSourceHolder()
         self.tree = None
-        self.vocab = None
+
+    class CollectionAction(enum.Enum):
+        PREFIX = 0
+        SIMILAR = 1
 
     @utils.decorator.timer
     def build(self):
-        session = self.datasource.create_mysql_session()
-        words = self.datasource.find_word_list(session, order_by_condition="text")
-        self.datasource.close_mysql_session(session)
+        session = datasources.get_db().create_session()
+        word_texts = datasources.get_db().find_word_plain_text_ordered_by_text(session)
+        datasources.get_db().close_session(session)
         self.tree = Node()
         register = dict()
-        for word in words:
-            self.tree.add(word.text, register)
+        for word_text in word_texts:
+            self.tree.add(word_text, register)
         del register
-        self.vocab = {word.text: word for word in words}
 
     @utils.decorator.timer
-    def collect(self, s=''):
-        return [self.vocab[word_text] for word_text in self.tree.collect(s)]
+    def collect(self, s='', spell_mode=CollectionAction.PREFIX):
+        if spell_mode == WordTextIndex.CollectionAction.PREFIX:
+            return self.tree.collect(s)
+        else:
+            return None

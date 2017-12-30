@@ -8,14 +8,14 @@ import flask
 import threading
 import traceback
 
-import config.config_manager
+import config
 import exceptions.base_exception
 import functions.suggest
 import logs.loggers
+import utils.utils
 
 logger = logs.loggers.LoggersHolder().get_logger('api')
-APIconfig = config.config_manager.ConfigManager().APIconfig
-app = flask.Flask(APIconfig.app_name)
+app = flask.Flask(config.API_config.app_name)
 
 ERR_MESSAGE_HTTP_500 = "Unknown Internal Server Error: {}."
 
@@ -59,15 +59,27 @@ def backdoor():
             command = ''
 
 
-@app.route("/suggest", method='GET')
 @exception_handler
-def suggest():
+@app.route("/autocomplete", methods=['GET'])
+def autocomplete():
     search_text = flask.request.args.get("search_text")
-    return functions.suggest.suggest_autocomplete(search_text), 200
+    search_text = utils.utils.remove_wild_char(search_text)
+    words_regex_list = search_text.split(' ')
+    return functions.suggest.suggest_autocomplete(words_regex_list), 200
+
+
+@exception_handler
+@app.route("/keywords", methods=['GET'])
+def similar_keywords():
+    search_text = flask.request.args.get("search_text")
+    search_text = utils.utils.remove_wild_char(search_text)
+    words_regex_list = search_text.split(' ')
+    return functions.suggest.suggest_similar_keywords(words_regex_list), 200
 
 
 def run():
     th = threading.Thread(target=backdoor)
     th.start()
     # disable autoreload to enable TRUE DEBUG!
-    app.run(host=APIconfig.host, port=APIconfig.port, debug=False, use_reloader=False, use_debugger=False)
+    app.run(host=config.API_config.host, port=config.API_config.port,
+            debug=False, use_reloader=False, use_debugger=False)

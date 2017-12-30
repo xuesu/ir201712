@@ -22,15 +22,25 @@ class Singleton(object):
         self.__instance = None
 
     def __call__(self, *args, **kwargs):
+        if kwargs.get("recreate", False):
+            kwargs.pop("recreate")
+            recreate_mode = True
+        else:
+            recreate_mode = False
         if self.__instance is None:
             self.__instance = self.__wrapped_cls(*args, **kwargs)
+        elif recreate_mode:
+            self.__instance.__init__(*args, **kwargs)
         return self.__instance
 
 
 def run_executor_node(func):
     def wrapper(*args, **kwargs):
-        import config.config_manager
-        config.config_manager.ConfigManager().driver_mode = False
+        import config
+        config.init()
+        config.spark_config = kwargs.get("b_spark_config").value
+        config.spark_config.driver_mode = False
+        kwargs.pop("b_spark_config")
         return func(*args, **kwargs)
 
     return wrapper

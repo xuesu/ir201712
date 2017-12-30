@@ -30,21 +30,21 @@ class NewsPlain(entities.SQLALCHEMY_BASE):
         toutiao = 3
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    source_id = sqlalchemy.Column(sqlalchemy.String(30), unique=True)
-    title = sqlalchemy.Column(sqlalchemy.String(100))
-    content = sqlalchemy.Column(sqlalchemy.Text)
-    time = sqlalchemy.Column(sqlalchemy.DateTime)
+    source_id = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.String(30), unique=True))
     review_num = sqlalchemy.Column(sqlalchemy.Integer)
-    abstract = sqlalchemy.Column(sqlalchemy.Text)
-    keywords = sqlalchemy.Column(sqlalchemy.Text)
-    source = sqlalchemy.Column(sqlalchemy.Enum(SourceEnum))
-    media_name = sqlalchemy.Column(sqlalchemy.String(20))
-    url = sqlalchemy.Column(sqlalchemy.String(150))
     word_num = sqlalchemy.Column(sqlalchemy.Integer)
+    abstract = sqlalchemy.Column(sqlalchemy.Text)
+    content = sqlalchemy.Column(sqlalchemy.Text)
+    keywords = sqlalchemy.Column(sqlalchemy.Text)
+    title = sqlalchemy.Column(sqlalchemy.String(100))
+    url = sqlalchemy.Column(sqlalchemy.String(150))
+    source = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.Enum(SourceEnum)))
+    media_name = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.String(20)))
+    # The related article may not store in the db, better not to use it.
+    related_id = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.Text))
+    time = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.DateTime))
     reviews = sqlalchemy.orm.relationship("ReviewPlain", cascade="all, delete")
     posting_list = sqlalchemy.orm.relationship("WordPosting", back_populates="news", cascade="all, delete")
-    # The related article may not store in the db, better not to use it.
-    related_id = sqlalchemy.Column(sqlalchemy.Text)
 
     def __repr__(self):
         return "<News Plain(source_id='{}', source='{}', abstract='{}')>".format(

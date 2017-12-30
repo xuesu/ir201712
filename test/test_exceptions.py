@@ -6,10 +6,10 @@ be lazy, be in one script
 """
 
 import exceptions.base_exception
-import unittest
+import test
 
 
-class IRBaseExceptionTest(unittest.TestCase):
+class IRBaseExceptionTest(test.TestCase):
     def setUp(self):
         pass
 

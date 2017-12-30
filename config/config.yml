@@ -12,7 +12,7 @@ datasource:
   pool_size: 5
   max_overflow: 10
   timeout: 60
-  rebuild: False
+  rebuild: True
 spark:
   master: local
   app_name: ir
@@ -22,5 +22,9 @@ sorter:
     b: 0.75
     title_bias: 2
 functions:
-  suggest:
-    number: 3
+  autocomplete:
+    default_number: 3
+indexes:
+  word_synonym:
+    model_cache_path: models/word_synonyms.cache
+    default_number: 3

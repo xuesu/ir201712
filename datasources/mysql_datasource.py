@@ -5,35 +5,64 @@
 """
 import pandas
 import sqlalchemy
+import sqlalchemy.exc
 import sqlalchemy.orm
 
-import config.config_manager
+import config
 import entities
 import entities.news  # essential to create all tables
 import entities.review
 import entities.words
+import logs.loggers
 
-datasource_config = config.config_manager.ConfigManager().datasource_config
+logger = logs.loggers.LoggersHolder().get_logger("datasource")
 
 
 class MySQLDataSource(object):
     def __init__(self, testing=False):
+        datasource_config = config.datasource_config
         self.testing = testing
         self.database_name = datasource_config.test_database_name if testing else datasource_config.database_name
+        self.session_pool = list()
+        self.former_action = dict()
         self.engine = self.connect()
-        if datasource_config.rebuild and config.config_manager.ConfigManager().driver_mode:
-            self.drop_all_tables()
-        self.create_all_tables()
         self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.scope_session_maker = sqlalchemy.orm.scoped_session(self.session_maker)
+        if (testing or datasource_config.rebuild) and config.spark_config.driver_mode:
+            self.drop_all_tables()
+        self.create_all_tables()
+
+    def __del__(self):
+        self.close_all_session()
 
     def create_session(self):
-        return self.scope_session_maker()
+        session = self.scope_session_maker()
+        self.session_pool.append(session)
+        return session
 
     def close_session(self, session):
+        try:
+            self.commit_session(session)
+        except sqlalchemy.exc.InvalidRequestError as e:
+            logger.error(e)
+            self.session_pool.remove(session)
         session.close()
 
+    def close_all_session(self):
+        session_pool = [session for session in self.session_pool]
+        for session in session_pool:
+            self.close_session(session)
+        self.session_pool = list()
+
+    def commit_session(self, session):
+        try:
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            logger.error(e)
+
     def connect(self):
+        datasource_config = config.datasource_config
         engine = sqlalchemy.create_engine(
             "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4".format(
                 datasource_config.user, datasource_config.password,
@@ -47,76 +76,89 @@ class MySQLDataSource(object):
         )
         return engine
 
-    def upsert_news(self, session, news):
-        news = session.merge(news)
-        session.commit()
-        return news
-
     def create_all_tables(self):
         entities.SQLALCHEMY_BASE.metadata.create_all(self.engine)
 
-    def drop_all_tables(self):
+    def drop_all_tables(self, forced=True):
         """
         will DROP all tables!
         :return:
         """
+        if forced:
+            self.close_all_session()
         entities.SQLALCHEMY_BASE.metadata.drop_all(self.engine)
 
-    def find_news_list(self, session, filter_by_condition=None, order_by_condition=None):
-        query = session.query(entities.news.NewsPlain).options(sqlalchemy.orm.lazyload('reviews'))
+    def recreate_all_tables(self):
+        self.drop_all_tables()
+        self.create_all_tables()
+
+    def upsert_one_or_many(self, session, obj, commit_now=True):
+        if isinstance(obj, list):
+            ans = list()
+            for o in obj:
+                ans.append(session.merge(o))
+        else:
+            ans = session.merge(obj)
+        if commit_now:
+            self.commit_session(session)
+        return ans
+
+    def find(self, session, qentities,
+             filter_by_condition=None, order_by_condition=None, options=None, pandas_format=False, first=False):
+        if isinstance(qentities, list):
+            query = session.query(*qentities)
+        else:
+            query = session.query(qentities)
         if filter_by_condition is not None:
             query = query.filter_by(**filter_by_condition)
         if order_by_condition is not None:
             query = query.order_by(order_by_condition)
-        return query.all()
+        if options is not None:
+            if isinstance(options, list):
+                for option in options:
+                    query = query.options(option)
+            else:
+                query = query.options(options)
+        if pandas_format:
+            return pandas.read_sql_query(query.statement, self.engine)
+        elif first:
+            return query.first()
+        else:
+            return query.all()
+
+    def delete(self, session, obj, commit_now=True):
+        session.delete(obj)
+        if commit_now:
+            self.commit_session(session)
+
+    def upsert_news_or_news_list(self, session, news, commit_now=True):
+        return self.upsert_one_or_many(session, news, commit_now)
+
+    def find_news_list(self, session):
+        return self.find(session, entities.news.NewsPlain)
 
     def find_news_by_source_id(self, session, source_id):
-        news_list = self.find_news_list(session, {"source_id": source_id})
-        if len(news_list) == 0:
-            return None
-        else:
-            return news_list[0]
+        return self.find(session, entities.news.NewsPlain, filter_by_condition={"source_id": source_id}, first=True)
 
-    def find_news_plain_text(self, session, filter_by_condition=None):
-        query = session.query(entities.news.NewsPlain.id, entities.news.NewsPlain.title,
-                              entities.news.NewsPlain.content)
-        if filter_by_condition is not None:
-            query = query.filter_by(**filter_by_condition)
-        return pandas.read_sql_query(query.statement, self.engine)
+    def find_news_plain_text(self, session):
+        return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
+                                   entities.news.NewsPlain.content], pandas_format=True)
 
-    def upsert_word(self, session, word):
-        if isinstance(word, list):
-            for w in word:
-                session.merge(w)
-        else:
-            word = session.merge(word)
-        session.commit()
-        return word
+    def upsert_word_or_word_list(self, session, word, commit_now=True):
+        return self.upsert_one_or_many(session, word, commit_now)
 
-    def find_word_list(self, session, filter_by_condition=None, order_by_condition=None):
-        query = session.query(entities.words.Word).options(sqlalchemy.orm.lazyload('posting_list'))
-        if filter_by_condition is not None:
-            query = query.filter_by(**filter_by_condition)
-        if order_by_condition is not None:
-            query = query.order_by(order_by_condition)
-        return query.all()
+    def find_word_list(self, session):
+        return self.find(session, entities.words.Word)
 
     def find_word_by_text(self, session, text):
-        word_list = self.find_word_list(session, {"text": text})
-        if len(word_list) == 0:
-            return None
-        else:
-            return word_list[0]
+        return self.find(session, entities.words.Word, filter_by_condition={"text": text}, first=True)
 
-    def delete_word(self, session, word):
-        session.delete(word)
-        session.commit()
-
-    def find_word_posting_list(self, session, filter_by_condition):
-        query = session.query(entities.words.WordPosting)
-        if filter_by_condition is not None:
-            query = query.filter_by(**filter_by_condition)
-        return query.all()
+    def delete_word(self, session, word, commit_now=True):
+        self.delete(session, word, commit_now)
 
     def find_word_posting_list_by_word_id(self, session, word_id):
-        return self.find_word_posting_list(session, {"word_id": word_id})
+        return self.find(session, entities.words.WordPosting, filter_by_condition={"word_id": word_id})
+
+    def find_word_plain_text_ordered_by_text(self, session):
+        ans = self.find(session, [entities.words.Word.text], order_by_condition="text")
+        return [a[0] for a in ans]

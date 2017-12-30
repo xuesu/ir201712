@@ -1,2 +1,6 @@
 *.pyc
 logs/*.log*
+.idea
+models
+spark-warehouse
+*/spark-warehouse

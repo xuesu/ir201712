@@ -26,13 +26,13 @@ class ReviewPlain(entities.SQLALCHEMY_BASE):
 
     review_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     news_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('news_plain.id'), nullable=False)
-    user_id = sqlalchemy.Column(sqlalchemy.String(30))
-    user_name = sqlalchemy.Column(sqlalchemy.String(50))
-    area = sqlalchemy.Column(sqlalchemy.String(20))
-    content = sqlalchemy.Column(sqlalchemy.Text)
-    time = sqlalchemy.Column(sqlalchemy.DateTime)
     agree = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    content = sqlalchemy.Column(sqlalchemy.Text)
+    time = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.DateTime))
+    user_id = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.String(30)))
+    user_name = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.String(50)))
+    area = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.String(20)))
 
     def __repr__(self):
-        return "<Review(review_id='{}' news_id='{}', user_id='{}', time='{}')>".format(
-            self.review_id, self.news_id, self.user_id, self.time)
+        return "<Review(review_id='{}' news_id='{}', user_id='{}')>".format(
+            self.review_id, self.news_id, self.user_id)
