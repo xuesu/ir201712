@@ -30,23 +30,34 @@ def tokenize(unicode_sentence, mode="default", HMM=True):
                 for i in range(len(w) - 1):
                     gram2 = w[i:i + 2]
                     if jieba.posseg.dt.FREQ.get(gram2):
-                        yield (gram2, start + i, start + i + 2)
+                        yield (gram2, pos, start + i, start + i + 2)
             if len(w) > 3:
                 for i in range(len(w) - 2):
                     gram3 = w[i:i + 3]
                     if jieba.posseg.dt.FREQ.get(gram3):
-                        yield (gram3, start + i, start + i + 3)
+                        yield (gram3, pos, start + i, start + i + 3)
             yield (w, pos, start, start + width)
             start += width
 
 
-def cut4index(text_df):
+def cut4synonym_index(text_df):
     def segment_map(r):
-        title_words = [w[0] for w in tokenize(r.title) if w[0] != ' ']
-        content_words = [w[0] for w in tokenize(r.content) if w[0] != ' ']
+        stop_nature_list = ['', 'w', 'x', 'y', 'c']
+        title_words = [w[0] for w in tokenize(r.title) if w[0] != ' ' and w[1] not in stop_nature_list]
+        content_words = [w[0] for w in tokenize(r.content) if w[0] != ' ' and w[1] not in stop_nature_list]
         return [title_words, content_words]
 
     return text_df.rdd.flatMap(segment_map)
+
+
+def cut4cooccurrence_index(text_df):
+    def segment_map(r):
+        stop_nature_list = ['', 'w', 'x', 'y', 'c']
+        title_words = [w[0] for w in tokenize(r.title) if w[0] != ' ' and w[1] not in stop_nature_list]
+        content_words = [w[0] for w in tokenize(r.content) if w[0] != ' ' and w[1] not in stop_nature_list]
+        return title_words + content_words
+
+    return text_df.rdd.map(segment_map)
 
 
 def cut4db(text_df):
@@ -68,7 +79,7 @@ def cut4db(text_df):
 
     @utils.decorator.run_executor_node
     @utils.decorator.timer
-    def saving_foreachPartition(rdd):
+    def saving_foreachPartition(rd):
         import config
         import datasources
         import entities.words
@@ -76,7 +87,7 @@ def cut4db(text_df):
         logger = logs.loggers.LoggersHolder().get_logger("updater")
         logger.info(config.spark_config.testing)
         session = datasources.get_db().create_session()
-        for text, pitr in rdd:
+        for text, pitr in rd:
             word_text = text[: text.rindex('\t')]
             pos = text[text.rindex('\t') + 1:]
             posting_list = []
@@ -96,5 +107,4 @@ def cut4db(text_df):
 
     rdd = text_df.rdd.flatMap(segment_map).groupByKey()
     b_spark_config = config.get_spark_context().broadcast(config.spark_config)
-    rdd.foreachPartition(lambda rdd: saving_foreachPartition(
-        rdd, b_spark_config=b_spark_config))
+    rdd.foreachPartition(lambda rd: saving_foreachPartition(rd, b_spark_config=b_spark_config))

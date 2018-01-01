@@ -7,10 +7,10 @@ be lazy, be in one script
 
 import datasources.mysql_datasource
 import test
-import updater
+import update
 
 
-class Updater(test.TestCase):
+class UpdaterTest(test.TestCase):
     """
     Test this when net is connected.
     Yes, illegal dependence again.
@@ -18,7 +18,7 @@ class Updater(test.TestCase):
 
     def setUp(self):
         datasources.get_db().recreate_all_tables()
-        self.updater = updater.Updater()
+        self.updater = update.Updater()
 
     def tearDown(self):
         pass

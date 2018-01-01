@@ -65,6 +65,12 @@ class DataSourceTest(test.TestCase):
         self.assertIsNotNone(news_list[0].reviews[0].news_id)
         self.assertEqual(news_list[0].reviews[0].content, self.news_sample.reviews[0].content)
 
+    def test_find_news_by_id(self):
+        news = entities.news.NewsPlain()
+        news = datasources.get_db().upsert_news_or_news_list(self.session, news)
+        news2 = datasources.get_db().find_news_by_id(self.session, news.id)
+        self.assertEqual(news.id, news2.id)
+
     def test_find_news_by_source_id(self):
         news = entities.news.NewsPlain(source_id="comos-fynfvar5143551")
         datasources.get_db().upsert_news_or_news_list(self.session, news)

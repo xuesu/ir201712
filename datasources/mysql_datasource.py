@@ -137,6 +137,9 @@ class MySQLDataSource(object):
     def find_news_list(self, session):
         return self.find(session, entities.news.NewsPlain)
 
+    def find_news_by_id(self, session, id):
+        return self.find(session, entities.news.NewsPlain, filter_by_condition={"id": id}, first=True)
+
     def find_news_by_source_id(self, session, source_id):
         return self.find(session, entities.news.NewsPlain, filter_by_condition={"source_id": source_id}, first=True)
 
@@ -156,8 +159,11 @@ class MySQLDataSource(object):
     def delete_word(self, session, word, commit_now=True):
         self.delete(session, word, commit_now)
 
-    def find_word_posting_list_by_word_id(self, session, word_id):
-        return self.find(session, entities.words.WordPosting, filter_by_condition={"word_id": word_id})
+    def find_word_posting_list_by_word_id(self, session, word_id, news_id=None):
+        filter_by_condition = {"word_id": word_id}
+        if news_id is not None:
+            filter_by_condition = {"word_id": word_id, "news_id": news_id}
+        return self.find(session, entities.words.WordPosting, filter_by_condition=filter_by_condition)
 
     def find_word_plain_text_ordered_by_text(self, session):
         ans = self.find(session, [entities.words.Word.text], order_by_condition="text")

@@ -2,11 +2,14 @@
 """
 @author: xuesu
 """
+import copy
 import enum
 
-
+import config
 import datasources
+import exceptions.indexes_exceptions
 import utils.decorator
+import utils.utils
 
 
 class Node(object):
@@ -29,9 +32,9 @@ class Node(object):
             ind += 1
         return ind, node
 
-    def collect(self, s='', prefixs=None):
-        if prefixs is None:
-            prefixs = ['']
+    def collect_prefix(self, s='', prefixes=None):
+        if prefixes is None:
+            prefixes = ['']
         ans = []
         if s and s[0] != '*':
             if s[0] not in self.children.keys():
@@ -40,10 +43,10 @@ class Node(object):
         else:
             valid_c = self.children.keys()
         for c in valid_c:
-            new_prefixs = [prefix + c for prefix in prefixs]
-            ans += self.children[c].collect(s[1:] if len(s) > 1 else '', new_prefixs)
+            new_prefixes = [prefix + c for prefix in prefixes]
+            ans += self.children[c].collect_prefix(s[1:] if len(s) > 1 else '', new_prefixes)
         if self.leaf and ((not s) or s == '*' * len(s)):
-            return ans + prefixs
+            return ans + prefixes
         else:
             return ans
 
@@ -74,6 +77,33 @@ class Node(object):
             node = node.children[c]
         node.leaf = True
 
+    def collect_similar(self, pattern, rthreshold, prefixes=None):
+        if rthreshold < 0:
+            raise exceptions.indexes_exceptions.WordTextSimilarInvalidEditorDistanceThreshold(pattern, self)
+        penalties = config.indexes_config.word_text_similar_penalties
+        if prefixes is None:
+            prefixes = {""}
+        if not pattern and self.leaf:
+            ans = {prefix: rthreshold for prefix in prefixes}
+        else:
+            ans = dict()
+        for c in self.children:
+            new_prefixes = {prefix + c for prefix in prefixes}
+            if pattern and (pattern[0] == '*' or pattern[0] == c):
+                cans = self.children[c].collect_similar(pattern[1:], rthreshold, new_prefixes)
+                ans = utils.utils.merge_dict_using_bigger_v(ans, cans)
+            if rthreshold >= penalties[1]:
+                cans = self.children[c].collect_similar(pattern, rthreshold - penalties[1], new_prefixes)
+                ans = utils.utils.merge_dict_using_bigger_v(ans, cans)
+            if pattern and rthreshold >= penalties[2]:
+                cans = self.children[c].collect_similar(pattern[1:], rthreshold - penalties[2], new_prefixes)
+                ans = utils.utils.merge_dict_using_bigger_v(ans, cans)
+
+        if pattern and rthreshold >= penalties[0]:
+            cans = self.collect_similar(pattern[1:], rthreshold - penalties[0], prefixes)
+            ans = utils.utils.merge_dict_using_bigger_v(ans, cans)
+        return ans
+
 
 class WordTextIndex(object):
     """
@@ -87,6 +117,9 @@ class WordTextIndex(object):
         PREFIX = 0
         SIMILAR = 1
 
+    def init(self, force_refresh=False):
+        self.build()
+
     @utils.decorator.timer
     def build(self):
         session = datasources.get_db().create_session()
@@ -99,8 +132,13 @@ class WordTextIndex(object):
         del register
 
     @utils.decorator.timer
-    def collect(self, s='', spell_mode=CollectionAction.PREFIX):
-        if spell_mode == WordTextIndex.CollectionAction.PREFIX:
-            return self.tree.collect(s)
+    def collect(self, s='', action=CollectionAction.PREFIX, threshold=None):
+        if action == WordTextIndex.CollectionAction.PREFIX:
+            return self.tree.collect_prefix(s)
         else:
-            return None
+            if threshold is None:
+                threshold = config.indexes_config.word_text_similar_default_threshold
+            text2score = self.tree.collect_similar(s, threshold)
+            text2score = [(text2score[text], text) for text in text2score]
+            text2score.sort(reverse=True)
+            return [st[1] for st in text2score]

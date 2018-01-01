@@ -5,7 +5,7 @@ import pyspark.mllib.feature
 import config
 import datasources
 import py4j.protocol
-import updater.segment
+import update.segment
 
 
 class WordSynonymIndex(object):
@@ -13,7 +13,7 @@ class WordSynonymIndex(object):
         self.inited = False
         self.model = None
 
-    def check_init(self, force_refresh=False):
+    def init(self, force_refresh=False):
         if self.inited:
             return
         if force_refresh or not os.path.exists(config.indexes_config.word_synonym_model_cache_path):
@@ -32,7 +32,7 @@ class WordSynonymIndex(object):
                 datasources.get_db().find_news_plain_text(sqlsession))
             datasources.get_db().close_session(sqlsession)
 
-        train_data = updater.segment.cut4index(text_df)
+        train_data = update.segment.cut4synonym_index(text_df)
         word2vec = pyspark.mllib.feature.Word2Vec()
         self.model = word2vec.fit(train_data)
         self.model.save(config.get_spark_context(),
@@ -45,7 +45,6 @@ class WordSynonymIndex(object):
         :param num:
         :return:
         """
-        self.check_init()
         if num is None:
             num = config.indexes_config.word_synonym_default_number
         try:

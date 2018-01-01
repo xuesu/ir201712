@@ -18,8 +18,9 @@ def get_date_before(shift=0):
 
 def remove_wild_char(s):
     s = re.sub(r"[^\s\w`=\\;.!/_,$^*+\"\'\[\]—！，。？、~@#￥%…&（）：；《》“”()»〔〕?\-]", "", s)
-    s = re.sub(r"[\s]", " ", s)
-    s = re.sub(r"  ", " ", s)
+    s = re.sub("\r", "\n", s)
+    s = re.sub("\n\n", "\n", s)
+    s = re.sub("\n +", "\n", s)
     return s.strip()
 
 
@@ -36,3 +37,22 @@ def remove_wild_char_in_review(review):
     review.content = remove_wild_char(review.content)
 
 
+def remove_new_line(s):
+    s = re.sub("[\n|\r]", " ", s)
+    return s.strip()
+
+
+def merge_dict_using_bigger_v(d1, d2):
+    d3 = {k: d1[k] for k in d1}
+    for k in d2:
+        if d1.get(k) is None:
+            d3[k] = d2[k]
+        else:
+            d3[k] = max(d1[k], d2[k])
+    return d3
+
+
+def merge_two_str(s1, s2):
+    if s1 < s2:
+        return s1 + " " + s2
+    return s2 + " " + s1

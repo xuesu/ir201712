@@ -13,6 +13,7 @@ class PostingIndex(object):
     def __init__(self):
         # ORM session, plz keep it.
         self.session = datasources.get_db().create_session()
+        self.inited = True
 
     def __del__(self):
         datasources.get_db().close_session(self.session)
@@ -21,14 +22,17 @@ class PostingIndex(object):
         OR = 0
         AND = 1
 
+    def init(self, force_refresh=False):
+        pass
+
     def build(self):
         pass
 
     @utils.decorator.timer
-    def collect(self, word_ids, action=LogicAction.OR):
+    def collect(self, word_ids, news_id=None, action=LogicAction.OR):
         ans = dict()
         for word_id in word_ids:
-            word_posting_list = datasources.get_db().find_word_posting_list_by_word_id(self.session, word_id)
+            word_posting_list = datasources.get_db().find_word_posting_list_by_word_id(self.session, word_id, news_id)
             for word_posting in word_posting_list:
                 if word_posting.news_id not in ans:
                     ans[word_posting.news_id] = dict()

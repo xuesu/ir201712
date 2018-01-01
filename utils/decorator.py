@@ -38,9 +38,10 @@ def run_executor_node(func):
     def wrapper(*args, **kwargs):
         import config
         config.init()
-        config.spark_config = kwargs.get("b_spark_config").value
+        if kwargs.get("b_spark_config") is not None:
+            config.spark_config = kwargs.get("b_spark_config").value
+            kwargs.pop("b_spark_config")
         config.spark_config.driver_mode = False
-        kwargs.pop("b_spark_config")
         return func(*args, **kwargs)
 
     return wrapper
