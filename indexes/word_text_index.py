@@ -50,32 +50,22 @@ class Node(object):
         else:
             return ans
 
-    def add_tostr(self):
-        tmp = ['{}'.format(self.leaf)]
-        for c in self.children:
-            tmp.append('%c: {%s}' % (c, self.children[c].add_tostr()))
-        return ','.join(tmp)
-
-    def add_replace_or_register(self, register):
-        for c in self.children:
-            child = self.children[c]
-            if len(child.children.keys()) > 0:
-                child.add_replace_or_register(register)
-                child_str = child.add_tostr()
-                if child_str in register:
-                    self.children[c] = register[child_str]
-                    del child
-                else:
-                    register[child_str] = child
-
-    def add(self, s, register):
-        ind, node = self.step(s)
-        if len(node.children.keys()) > 0:
-            node.add_replace_or_register(register)
-        for c in s[ind:]:
-            node.children[c] = Node()
-            node = node.children[c]
-        node.leaf = True
+    def collect_samelength(self, s='', prefixes=None):
+        if prefixes is None:
+            prefixes = ['']
+        if not s:
+            return prefixes if self.leaf else []
+        ans = []
+        if s and s[0] != '*':
+            if s[0] not in self.children.keys():
+                return []
+            valid_c = [s[0]]
+        else:
+            valid_c = self.children.keys()
+        for c in valid_c:
+            new_prefixes = [prefix + c for prefix in prefixes]
+            ans += self.children[c].collect_samelength(s[1:] if len(s) > 1 else '', new_prefixes)
+        return ans
 
     def collect_similar(self, pattern, rthreshold, prefixes=None):
         if rthreshold < 0:
@@ -105,6 +95,79 @@ class Node(object):
         return ans
 
 
+class NodeTmp(object):
+    max_id = 0
+
+    def __init__(self):
+        self.children = dict()
+        self.leaf = False
+        self.strc = ""
+        self.id = NodeTmp.max_id
+        NodeTmp.max_id += 1
+
+    def __del__(self):
+        for child in self.children:
+            del child
+
+    def get_node(self):
+        node = Node()
+        node.leaf = self.leaf
+        for c in self.children:
+            node.children[c] = self.children[c].get_node()
+        return node
+
+    def step(self, s):
+        node = self
+        ind = 0
+        for c in s:
+            nxt_node = node.children.get(c, None)
+            if nxt_node is None:
+                return ind, node
+            node = nxt_node
+            ind += 1
+        return ind, node
+
+    def add_tostr(self):
+        tmp = ['T' if self.leaf else 'F']
+        for c in self.children:
+            tmp.append('%c{%s}' % (c, self.children[c].strc))
+        return ','.join(tmp)
+
+    def add_tostrc(self):
+        tmp = ['T' if self.leaf else 'F']
+        for c in self.children:
+            tmp.append('%c:%d' % (c, self.children[c].id))
+        return ','.join(tmp)
+
+    def add_replace_or_register(self, register):
+        for c in self.children:
+            child = self.children[c]
+            if len(child.children.keys()) > 0:
+                child.add_replace_or_register(register)
+                child_str = child.add_tostr()
+                if child_str in register:
+                    self.children[c] = register[child_str]
+                    self.strc = self.add_tostrc()
+                    del child
+                else:
+                    register[child_str] = child
+
+    def add(self, s, register):
+        ind, node = self.step(s)
+        if len(node.children.keys()) > 0:
+            node.add_replace_or_register(register)
+        tnode = node
+        for c in s[ind:]:
+            node.children[c] = NodeTmp()
+            node = node.children[c]
+
+        node.leaf = True
+        for c in s[ind:]:
+            tnode.strc = tnode.add_tostrc()
+            tnode = tnode.children[c]
+        tnode.strc = tnode.add_tostrc()
+
+
 class WordTextIndex(object):
     """
     A temporary solution using Minimal Acyclic Finite State Automata
@@ -116,6 +179,7 @@ class WordTextIndex(object):
     class CollectionAction(enum.Enum):
         PREFIX = 0
         SIMILAR = 1
+        SAMELENGTH = 2
 
     def init(self, force_refresh=False):
         self.build()
@@ -126,19 +190,34 @@ class WordTextIndex(object):
         word_texts = datasources.get_db().find_word_plain_text_ordered_by_text(session)
         datasources.get_db().close_session(session)
         self.tree = Node()
+        c = None
+        tree_tmp = NodeTmp()
         register = dict()
-        for word_text in word_texts:
-            self.tree.add(word_text, register)
-        del register
+        for i, word_text in enumerate(word_texts):
+            if not word_text:
+                continue
+            if word_text[0] != c:
+                if c is not None:
+                    self.tree.children[c] = tree_tmp.get_node()
+                tree_tmp = NodeTmp()
+                register = dict()
+                c = word_text[0]
+            tree_tmp.add(word_text[1:], register)
+        if c is not None:
+            self.tree.children[c] = tree_tmp.get_node()
 
     @utils.decorator.timer
     def collect(self, s='', action=CollectionAction.PREFIX, threshold=None):
         if action == WordTextIndex.CollectionAction.PREFIX:
             return self.tree.collect_prefix(s)
-        else:
+        elif action == WordTextIndex.CollectionAction.SIMILAR:
             if threshold is None:
                 threshold = config.indexes_config.word_text_similar_default_threshold
+            if "*" in s:
+                threshold = max(0, threshold - s.count("*"))
             text2score = self.tree.collect_similar(s, threshold)
             text2score = [(text2score[text], text) for text in text2score]
             text2score.sort(reverse=True)
             return [st[1] for st in text2score]
+        else:
+            return self.tree.collect_samelength(s)

@@ -2,7 +2,6 @@
 """
 @author: xuesu
 """
-import abc
 
 import indexes.posting_index
 import indexes.vocab_index
@@ -28,7 +27,7 @@ class IndexHolder(object):
         self.posting_index.init(force_refresh)
         self.vocab_index.init(force_refresh)
         self.word_text_index.init(force_refresh)
-        self.word_coocurrence_index.inited(force_refresh)
+        self.word_coocurrence_index.init(force_refresh)
 
     def build(self):
         self.posting_index.build()

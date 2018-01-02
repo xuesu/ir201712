@@ -4,7 +4,7 @@
 
 """
 
-import api.api
+import api
 
 if __name__ == '__main__':
-    app = api.api.run()
+    app = api.run()

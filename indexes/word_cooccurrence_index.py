@@ -15,18 +15,14 @@ import utils.utils
 
 class WordCoOccurrenceIndex(object):
     def __init__(self):
-        self.inited = False
         self.model = None
 
     def init(self, force_refresh=False):
-        if self.inited:
-            return
         if force_refresh or not os.path.exists(config.indexes_config.word_cooccurrence_model_cache_path):
             self.build()
         else:
             self.model = config.get_spark_context().pickleFile(config.indexes_config.word_cooccurrence_model_cache_path)
         self.model.persist(storageLevel=pyspark.storagelevel.StorageLevel.MEMORY_AND_DISK)
-        self.inited = True
 
     @utils.decorator.timer
     def build(self, text_df=None):
@@ -39,8 +35,7 @@ class WordCoOccurrenceIndex(object):
 
         if text_df is None:
             sqlsession = datasources.get_db().create_session()
-            sparksession = pyspark.sql.SparkSession(config.get_spark_context())
-            text_df = sparksession.createDataFrame(
+            text_df = config.get_spark_session().createDataFrame(
                 datasources.get_db().find_news_plain_text(sqlsession))
             datasources.get_db().close_session(sqlsession)
 
@@ -50,7 +45,6 @@ class WordCoOccurrenceIndex(object):
         if os.path.exists(config.indexes_config.word_cooccurrence_model_cache_path):
             shutil.rmtree(config.indexes_config.word_cooccurrence_model_cache_path)
         self.model.saveAsPickleFile(config.indexes_config.word_cooccurrence_model_cache_path)
-        self.inited = True
 
     @utils.decorator.timer
     def collect(self, word_text_list):
@@ -60,6 +54,5 @@ class WordCoOccurrenceIndex(object):
         :param num:
         :return:
         """
-        self.check_init()
         word_text_list = set(word_text_list)
         return sum(sum(self.model.lookup(utils.utils.merge_two_str(*c))) for c in itertools.combinations(word_text_list, 2))

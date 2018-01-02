@@ -26,7 +26,7 @@ class MySQLDataSource(object):
         self.session_pool = list()
         self.former_action = dict()
         self.engine = self.connect()
-        self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine)
+        self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
         self.scope_session_maker = sqlalchemy.orm.scoped_session(self.session_maker)
         if (testing or datasource_config.rebuild) and config.spark_config.driver_mode:
             self.drop_all_tables()
@@ -138,10 +138,16 @@ class MySQLDataSource(object):
         return self.find(session, entities.news.NewsPlain)
 
     def find_news_by_id(self, session, id):
-        return self.find(session, entities.news.NewsPlain, filter_by_condition={"id": id}, first=True)
+        ans_list = self.find(session, entities.news.NewsPlain, filter_by_condition={"id": id})
+        if ans_list:
+            return ans_list[0]
+        return None
 
     def find_news_by_source_id(self, session, source_id):
-        return self.find(session, entities.news.NewsPlain, filter_by_condition={"source_id": source_id}, first=True)
+        ans_list = self.find(session, entities.news.NewsPlain, filter_by_condition={"source_id": source_id})
+        if ans_list:
+            return ans_list[0]
+        return None
 
     def find_news_plain_text(self, session):
         return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
@@ -151,10 +157,14 @@ class MySQLDataSource(object):
         return self.upsert_one_or_many(session, word, commit_now)
 
     def find_word_list(self, session):
-        return self.find(session, entities.words.Word)
+        return self.find(session, entities.words.Word, options=(sqlalchemy.orm.undefer("df"),
+                                                                sqlalchemy.orm.undefer("cf")))
 
     def find_word_by_text(self, session, text):
-        return self.find(session, entities.words.Word, filter_by_condition={"text": text}, first=True)
+        ans_list = self.find(session, entities.words.Word, filter_by_condition={"text": text})
+        if ans_list:
+            return ans_list[0]
+        return None
 
     def delete_word(self, session, word, commit_now=True):
         self.delete(session, word, commit_now)

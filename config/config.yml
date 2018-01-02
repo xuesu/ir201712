@@ -26,17 +26,22 @@ functions:
   autocomplete:
     default_number: 3
   similar_search:
-    candidate_number: 3
+    candidate_number: 2
+    candidate_replace_times: 1
+    candidate_length: 3
     default_number: 3
   snippet:
     max_length: 50 # 字数
+  emotions:
+    port: 8090 # restful API地址，当然也可以直接请求这个地址。
+    host: localhost
 indexes:
   word_synonym:
     model_cache_path: models/word_synonyms
     default_number: 3
   word_text:
     similar:
-      default_threshold: 2
+      default_threshold: 1
       penalties: [1, 1, 1] # add, del, rep
   word_cooccurrence:
     model_cache_path: models/word_cooccurrence

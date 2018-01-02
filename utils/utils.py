@@ -5,7 +5,9 @@ Do not import config.config_manager here.
 
 """
 
+import copy
 import datetime
+import itertools
 import re
 
 
@@ -56,3 +58,17 @@ def merge_two_str(s1, s2):
     if s1 < s2:
         return s1 + " " + s2
     return s2 + " " + s1
+
+
+def replace_partial_list(l1, mat, t):
+    l1 = copy.deepcopy(l1)
+    res = list()
+    out_idxes = [i for i in range(len(l1))]
+    in_idxes = [i for i in range(len(mat))]
+    for sout_idxes, sin_idxes in itertools.product(itertools.combinations(out_idxes, t),
+                                                   itertools.combinations(in_idxes, t)):
+        in_mat = [mat[sin_idx] for sin_idx in sin_idxes]
+        for in_vec in itertools.product(in_mat):
+            for i in range(t):
+                l1[sout_idxes[i]] = in_vec[i]
+            res.append(copy.deepcopy(res))

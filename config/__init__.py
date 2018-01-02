@@ -24,12 +24,19 @@ functions_config = None
 indexes_config = None
 spark_config = None
 __spark_context = None
+__spark_session = None
 
 
 def get_spark_context():
     if config.__spark_context is None:
         config.__spark_context = pyspark.SparkContext(conf=spark_config.conf)
     return __spark_context
+
+
+def get_spark_session():
+    if config.__spark_session is None:
+        config.__spark_session = pyspark.sql.SparkSession(config.get_spark_context())
+    return __spark_session
 
 
 def init():

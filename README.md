@@ -21,7 +21,7 @@ A simple information retrieval system using **python3** and spark.
 ### virtualenv
     
 1. install anaconda
-2. build a new virtualenv `conda create -n <env_name>`
+2. build a new virtualenv `conda create -n <env_name> python=3`
 3. activate the virtualenv `source activate <env_name>`
 3. `pip install -r requirements.list`
 
@@ -38,6 +38,15 @@ A simple information retrieval system using **python3** and spark.
 3. If you are using pyspark terminal, you can start now.
 4. If you are using pycharm, you need add `<spark_home>/python/pyspark` & `<spark_home>/python/lib/py4j-0.9-src.zip` into content root.
 
+## emotions
+It takes about 810MB memory, 囧
+
+1. `cd emotions`
+1. build a new virtualenv `conda create -n <env_name2> python=2`
+    - NOTE: This project is written in a **different** language!
+2. activate the virtualenv `source activate <env_name2>`
+3. `pip install -r requirements.list`
+4. `python demo_service.py`
 
 
 ## How to develop

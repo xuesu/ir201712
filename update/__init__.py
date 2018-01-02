@@ -20,13 +20,12 @@ class Updater(object):
 
     def __init__(self):
         self.sqlsession = None
-        self.sparksession = None
 
     def crawl(self, num=None, numbers=None):
         spiders.spider_manager.SpiderManager().crawl(num, numbers)
 
     def segment(self):
-        text_df = self.sparksession.createDataFrame(datasources.get_db().find_news_plain_text(self.sqlsession))
+        text_df = config.get_spark_session().createDataFrame(datasources.get_db().find_news_plain_text(self.sqlsession))
         update.segment.cut4db(text_df)
 
     def update_statistics(self):
@@ -68,12 +67,10 @@ class Updater(object):
 
     def update(self, num=20):
         self.sqlsession = datasources.get_db().create_session()
-        self.sparksession = pyspark.sql.SparkSession(config.get_spark_context())
         self.crawl(num)
         self.prepossess()
         datasources.get_db().close_session(self.sqlsession)
         self.sqlsession = None
-        self.sparksession = None
 
 
 if __name__ == '__main__':

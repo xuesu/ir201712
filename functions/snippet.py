@@ -6,16 +6,17 @@
 
 import config
 import datasources
+import exceptions.datasources_exceptions
 import functions.suggest
 import update.segment
 import utils.decorator
 
 
 @utils.decorator.timer
-def gen_snippet_with_wildchar(session, word_regex_list, news_id, length=None):
+def gen_snippet_with_wildcard(session, word_regex_list, news_id, length=None):
     fl = '*' in ''.join(word_regex_list)
     if fl:
-        word_text_list = functions.suggest.suggest_similar_search(session, word_regex_list, 1)
+        word_text_list = functions.suggest.suggest_similar_search(word_regex_list, 1)[0]
     else:
         word_text_list = word_regex_list
     return gen_snippet(session, word_text_list, news_id, length)
@@ -27,6 +28,8 @@ def gen_snippet(session, word_text_list, news_id, length=None):
         length = config.functions_config.snippet_max_length
     word_text_list = set(word_text_list)
     news = datasources.get_db().find_news_by_id(session, news_id)
+    if news is None:
+        raise exceptions.datasources_exceptions.NewsNotFoundException(news_id=news_id)
     abstract = news.abstract
     content = news.content
     stop_punc_list = {'。', '？', '！', '：', '；', '”', '“', '"', '…', '?', '!', '\n'}

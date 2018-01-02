@@ -1,0 +1,11 @@
+#wrapper{
+	background-image: url("../../images/intro2.jpg");
+	background-size: auto 100%
+}
+#sys_mes{
+	resize: none;
+	border: none;
+}
+.option{
+    display: inline-block
+}

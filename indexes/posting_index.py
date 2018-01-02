@@ -29,10 +29,10 @@ class PostingIndex(object):
         pass
 
     @utils.decorator.timer
-    def collect(self, word_ids, news_id=None, action=LogicAction.OR):
+    def collect(self, word_ids, action=LogicAction.OR):
         ans = dict()
         for word_id in word_ids:
-            word_posting_list = datasources.get_db().find_word_posting_list_by_word_id(self.session, word_id, news_id)
+            word_posting_list = datasources.get_db().find_word_posting_list_by_word_id(self.session, word_id)
             for word_posting in word_posting_list:
                 if word_posting.news_id not in ans:
                     ans[word_posting.news_id] = dict()

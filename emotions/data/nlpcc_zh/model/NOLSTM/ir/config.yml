@@ -1,0 +1,51 @@
+config:
+  DG_BATCH_SZ: 200
+  DG_DIVIDE_FOLD: true
+  DG_FIDS: [2, 1]
+  DG_FOLD_NUM: 11
+  DG_FOLD_TEST_ID: -1
+  DG_FOLD_VALID_ID: 0
+  DG_RNUM: 0
+  DG_SENTENCE_SZ: 200
+  DG_TEST_BATCH_SZ: 50
+  LABEL_NUM: 3
+  LANG: zh
+  PRE_CONVS_FILTER_NUMS: [32]
+  PRE_CONVS_KERNEL_NUMS:
+  - [3, 5, 6, 7, 9]
+  PRE_CONVS_LEVEL_NUMS: 1
+  PRE_CONVS_STRIDES:
+  - [1, 1, 1, 1, 1]
+  PRE_C_FIDS: []
+  PRE_DROPOUT_KEEP_PROB: 0.6
+  PRE_EMB_FIDS: [2]
+  PRE_E_LEARNING_RATE: 0.001
+  PRE_GOOD_RATE: 0.7
+  PRE_LINEAR0_SZ: 256
+  PRE_LINEAR1_SZ: 128
+  PRE_LINEAR2_SZ: 64
+  PRE_ONE_HOT_DEPTHS: [98]
+  PRE_ONE_HOT_FIDS: [1]
+  PRE_POOLS_SIZES:
+  - [-1, -1, -1, -1, -1]
+  PRE_POOLS_STRIDES:
+  - [-1, -1, -1, -1, -1]
+  PRE_STEP_NUM: 2000
+  PRE_VALID_TIME: 40
+  W2V_DELETE_RARE_WORD_FFIDS: [0]
+  W2V_DELETE_RARE_WORD_TFIDS: [2]
+  W2V_FILTER_NATURES: [all, nr, ns, nt, nz, o, un, m, x, y, ' ', None]
+  W2V_ONE_HOT_FIDS: [2, 1]
+  W2V_STEM: false
+  W2V_TRAIN_FIDS: [2, 1]
+  W2V_TRAIN_FIDS_EMB_SZ: [32, 8]
+  W2V_VOC_LIMITS: [2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+config_path: data/nlpcc_zh/model/NOLSTM/ir/config.yml
+lang: zh
+meta_path: data/nlpcc_zh/meta
+model_log_path: data/nlpcc_zh/model/NOLSTM/ir/log
+model_name: ir
+model_path: data/nlpcc_zh/model/NOLSTM/ir
+model_save_path: data/nlpcc_zh/model/NOLSTM/ir/m
+model_type: NOLSTM
+train_col: nlpcc_zh

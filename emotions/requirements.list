@@ -1,0 +1,9 @@
+pyyaml
+tensorflow
+numpy
+Flask
+flask-api
+nose
+simplejson
+jieba
+gensim

@@ -27,6 +27,6 @@ class VocabIndex(object):
 
     def collect(self, text_list):
         if isinstance(text_list, str):
-            return self.vocab.get(text_list, None)
+            return self.vocab.get(text_list)
         else:
-            return [self.vocab.get(text, None) for text in text_list]
+            return [self.vocab.get(text) for text in text_list]
