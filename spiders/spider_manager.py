@@ -5,7 +5,7 @@
 """
 import threading
 
-import exceptions.base_exception
+import my_exceptions.base_exception
 import spiders.sina_spider
 import utils.decorator
 
@@ -29,9 +29,9 @@ class SpiderManager(object):
         elif num is not None:
             numbers = {k: int(num / len(self.spiders)) for k in self.spiders.keys()}
         if numbers is None:
-            raise exceptions.base_exception.RequriedParameterEmpty("SpiderManager.crawl", "numbers")
+            raise my_exceptions.base_exception.RequriedParameterEmpty("SpiderManager.crawl", "numbers")
         if not isinstance(numbers, dict):
-            raise exceptions.base_exception.InvalidParameterIRException("SpiderManager.crawl", "numbers", dict, numbers)
+            raise my_exceptions.base_exception.InvalidParameterIRException("SpiderManager.crawl", "numbers", dict, numbers)
 
         ths = []
         for spider_name in self.spiders:

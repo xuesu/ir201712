@@ -7,7 +7,7 @@ import enum
 
 import config
 import datasources
-import exceptions.indexes_exceptions
+import my_exceptions.indexes_exceptions
 import utils.decorator
 import utils.utils
 
@@ -69,7 +69,7 @@ class Node(object):
 
     def collect_similar(self, pattern, rthreshold, prefixes=None):
         if rthreshold < 0:
-            raise exceptions.indexes_exceptions.WordTextSimilarInvalidEditorDistanceThreshold(pattern, self)
+            raise my_exceptions.indexes_exceptions.WordTextSimilarInvalidEditorDistanceThreshold(pattern, self)
         penalties = config.indexes_config.word_text_similar_penalties
         if prefixes is None:
             prefixes = {""}

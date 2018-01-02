@@ -3,10 +3,10 @@
 @author: xuesu
 
 """
-import exceptions.base_exception
+import my_exceptions.base_exception
 
 
-class NewsNotFoundException(exceptions.base_exception.IRBaseException):
+class NewsNotFoundException(my_exceptions.base_exception.IRBaseException):
     def __init__(self, news_id):
         message = "Can not found news {}".format(news_id)
         super(NewsNotFoundException, self).__init__(message, status_code=404)

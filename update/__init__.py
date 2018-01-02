@@ -10,6 +10,7 @@ import datasources
 import spiders.spider_manager
 import update.segment
 import utils.decorator
+import indexes
 
 
 @utils.decorator.Singleton
@@ -70,6 +71,7 @@ class Updater(object):
         self.crawl(num)
         self.prepossess()
         datasources.get_db().close_session(self.sqlsession)
+        indexes.IndexHolder().init(force_refresh=True)
         self.sqlsession = None
 
 

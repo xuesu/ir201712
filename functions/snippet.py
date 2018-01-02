@@ -6,7 +6,7 @@
 
 import config
 import datasources
-import exceptions.datasources_exceptions
+import my_exceptions.datasources_exceptions
 import functions.suggest
 import update.segment
 import utils.decorator
@@ -29,7 +29,7 @@ def gen_snippet(session, word_text_list, news_id, length=None):
     word_text_list = set(word_text_list)
     news = datasources.get_db().find_news_by_id(session, news_id)
     if news is None:
-        raise exceptions.datasources_exceptions.NewsNotFoundException(news_id=news_id)
+        raise my_exceptions.datasources_exceptions.NewsNotFoundException(news_id=news_id)
     abstract = news.abstract
     content = news.content
     stop_punc_list = {'。', '？', '！', '：', '；', '”', '“', '"', '…', '?', '!', '\n'}

@@ -8,14 +8,14 @@ import simplejson as json
 
 import config
 import datasources
-import exceptions.datasources_exceptions
-import exceptions.emtions_exceptions
+import my_exceptions.datasources_exceptions
+import my_exceptions.emtions_exceptions
 
 
 def analyze_emotion4news(session, news_id):
     news = datasources.get_db().find_news_by_id(session, news_id)
     if news is None:
-        raise exceptions.datasources_exceptions.NewsNotFoundException(news_id)
+        raise my_exceptions.datasources_exceptions.NewsNotFoundException(news_id)
     ans = list()
     for review in news.reviews:
         ans.append(analyze_emotion4review(review.content))
@@ -31,11 +31,11 @@ def analyze_emotion4review(text):
         prompt_500 = "Unknown Restful Server Error"
         resp = requests.post(config.functions_config.emotions_url, data={"text": text})
         if resp.status_code == 500:
-            raise exceptions.emtions_exceptions.EmotionRequestError(prompt_500)
+            raise my_exceptions.emtions_exceptions.EmotionRequestError(prompt_500)
         content = json.loads(resp.content)
         if resp.status_code // 100 != 2:
-            raise exceptions.emtions_exceptions.EmotionRequestError(
+            raise my_exceptions.emtions_exceptions.EmotionRequestError(
                 content.get("error", {"message": prompt_500}).get("message", prompt_500))
         return content['data']['tag']
     except Exception as e:
-        raise exceptions.emtions_exceptions.EmotionRequestError(e)
+        raise my_exceptions.emtions_exceptions.EmotionRequestError(e)

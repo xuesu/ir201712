@@ -7,7 +7,7 @@ be lazy, be in one script
 
 import api
 import api.basic
-import exceptions.base_exception
+import my_exceptions.base_exception
 import test
 
 
@@ -27,7 +27,7 @@ class APITest(test.TestCase):
 
         @api.basic.exception_handler
         def test_300():
-            raise exceptions.base_exception.IRBaseException("This is an err!")
+            raise my_exceptions.base_exception.IRBaseException("This is an err!")
 
         @api.basic.exception_handler
         def test_233():

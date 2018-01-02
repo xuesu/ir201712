@@ -3,10 +3,10 @@
 @author: xuesu
 
 """
-import exceptions.base_exception
+import my_exceptions.base_exception
 
 
-class EmotionRequestError(exceptions.base_exception.IRBaseException):
+class EmotionRequestError(my_exceptions.base_exception.IRBaseException):
     def __init__(self, sube):
         message = "EmotionRequestError caused by: {}".format(sube)
         super(EmotionRequestError, self).__init__(message)

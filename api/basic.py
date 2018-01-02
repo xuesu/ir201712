@@ -6,7 +6,7 @@
 import flask
 import traceback
 
-import exceptions.base_exception
+import my_exceptions.base_exception
 import logs.loggers
 
 logger = logs.loggers.LoggersHolder().get_logger('api')
@@ -20,7 +20,7 @@ def exception_handler(method):
             content, status_code = method(*args, **kwargs)
             resp = flask.jsonify({"content": content})
             resp.status_code = status_code
-        except exceptions.base_exception.IRBaseException as e:
+        except my_exceptions.base_exception.IRBaseException as e:
             resp = flask.jsonify({"err_message": e.message})
             resp.status_code = e.status_code
             logger.info(e.message, exc_info=False)
