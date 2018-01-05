@@ -4,3 +4,4 @@ logs/*.log*
 models
 spark-warehouse
 */spark-warehouse
+emotions/data/nlpcc_zh/model/NOLSTM/ir/log/*
