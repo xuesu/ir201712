@@ -12,9 +12,10 @@ import indexes
 def filter_by_avgtfidf(word_texts, keep_num):
     if len(word_texts) <= keep_num:
         return word_texts
-    words = indexes.IndexHolder().vocab_index.collect(word_texts)
-    words_graded = [((word.cf + 2) / math.log(word.df + 2), word) if word is not None else -1 for word in words]
+    words = indexes.IndexHolder().vocab_index.collect(word_texts)  # TODO: to be absorb, what is this
+    words_graded = [((word.cf + 2) / math.log(word.df + 2), word) for word in words if word is not None]
     words_graded.sort(reverse=True, key=lambda x: x[0])
+
     words_graded = [word_grade[1].text for word_grade in words_graded]
     return words_graded[:keep_num]
 

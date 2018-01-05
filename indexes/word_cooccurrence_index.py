@@ -30,7 +30,7 @@ class WordCoOccurrenceIndex(object):
         @utils.decorator.run_executor_node
         def build_foreach(r):
             r = set(r)
-            for c in itertools.combinations(r, 2):
+            for c in itertools.combinations(r, 2):  # every two word is composed of variable c
                 yield (utils.utils.merge_two_str(*c), 1)
 
         if text_df is None:
@@ -41,7 +41,7 @@ class WordCoOccurrenceIndex(object):
 
         train_data = update.segment.cut4cooccurrence_index(text_df)
         self.model = train_data.flatMap(build_foreach).reduceByKey(operator.add).mapValues(
-            lambda x: math.log(x + 1)).sortByKey()
+            lambda x: math.log(x + 1)).sortByKey()  # beautiful code.
         if os.path.exists(config.indexes_config.word_cooccurrence_model_cache_path):
             shutil.rmtree(config.indexes_config.word_cooccurrence_model_cache_path)
         self.model.saveAsPickleFile(config.indexes_config.word_cooccurrence_model_cache_path)
@@ -54,5 +54,5 @@ class WordCoOccurrenceIndex(object):
         :param num:
         :return:
         """
-        word_text_list = set(word_text_list)
+        word_text_list = set(word_text_list)                                  # why does there also need to combination?
         return sum(sum(self.model.lookup(utils.utils.merge_two_str(*c))) for c in itertools.combinations(word_text_list, 2))

@@ -10,6 +10,8 @@ import entities
 
 
 class WordPosting(entities.SQLALCHEMY_BASE):
+    # this table is used to store a word and its posting record corresponding to a news document,
+    # and each posting record is a node of posting list
     __tablename__ = 'word_posting'
 
     word_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('word.id'), primary_key=True, index=True)

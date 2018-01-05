@@ -22,7 +22,7 @@ class FiltersTest(test.TestCase):
     def tearDown(self):
         pass
 
-    def test_filter_by_avgtfidf(self):
+    def test_filter_by_avgtfidf(self):  # TODO: to be absorb
         word_text_samples = ["1000", "10", "001", "010", "0", "1", "01"]
         for i, word_text in enumerate(word_text_samples):
             datasources.get_db().upsert_word_or_word_list(self.session,

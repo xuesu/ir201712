@@ -24,7 +24,7 @@ def tokenize(unicode_sentence, mode="default", HMM=True):
             yield (w, pos, start, start + width)
             start += width
     else:
-        for w, pos in jieba.posseg.cut(unicode_sentence, HMM=HMM):
+        for w, pos in jieba.posseg.cut(unicode_sentence, HMM=HMM):  # cut for searching?
             width = len(w)
             if len(w) > 2:
                 for i in range(len(w) - 1):
@@ -61,14 +61,25 @@ def cut4cooccurrence_index(text_df):
 
 
 def cut4db(text_df):
+    """
+    
+    :param text_df: a super big dataframe of news set reading from MySQL, 
+    in which each row is composed of (id, title, content).
+    :return: 
+    """
     def segment_map(r):
+        """
+        segment a news to 
+        :param r: news entity
+        :return: a list, each element is a tuple (word, dict saved its position)
+        """
         words = dict()
         title_words = [(w[0], w[1], w[2]) for w in tokenize(r.title) if w[0] != ' ']
         for word, pos_tag, position in title_words:
             word_key = '%s\t%s' % (word, pos_tag)
             if word not in words:
                 words[word_key] = {"title": [], "content": [], "news_id": r.id}
-            words[word_key]["title"].append(position)
+            words[word_key]["title"].append(position)  # Beautiful code
         content_words = [(w[0], w[1], w[2]) for w in tokenize(r.content) if w[0] != ' ']
         for word, pos_tag, position in content_words:
             word_key = '%s\t%s' % (word, pos_tag)
@@ -88,12 +99,12 @@ def cut4db(text_df):
         logger.info(config.spark_config.testing)
         session = datasources.get_db().create_session()
         for text, pitr in rd:
-            word_text = text[: text.rindex('\t')]
+            word_text = text[: text.rindex('\t')]  # text in fact is a word plus its part of speech.
             pos = text[text.rindex('\t') + 1:]
-            posting_list = []
+            posting_list = []  # word maps some document id.
             word = entities.words.Word(text=word_text, df=0, cf=0, pos=pos)
-            for posting_j in pitr:
-                tf = len(posting_j["title"]) + len(posting_j["content"])
+            for posting_j in pitr:  # specific document record.
+                tf = len(posting_j["title"]) + len(posting_j["content"])  # term frequency of the word in this document.
                 word.cf += tf
                 word.df += 1
                 word_posting = entities.words.WordPosting(news_id=posting_j["news_id"],

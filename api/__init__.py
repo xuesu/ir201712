@@ -12,6 +12,8 @@ import datasources
 import functions.emotions
 import functions.snippet
 import functions.suggest
+import functions.search
+import functions.emotions
 import utils.utils
 
 
@@ -42,6 +44,7 @@ def similar_search():
     return functions.suggest.suggest_similar_search(word_regex_list, num), 200
 
 
+# deprecated
 @app.route("/emotions/", methods=['GET'], endpoint="emotions")
 @api.basic.exception_handler
 def analyze_emotion4news():
@@ -66,6 +69,72 @@ def get_snippet():
     ans = functions.snippet.gen_snippet_with_wildcard(session, word_regex_list, news_id, length)
     datasources.get_db().close_session(session)
     return ans, 200
+
+
+@app.route("/search", methods=['GET'])
+def search():
+    query = flask.request.args.get("query")
+    ranking = flask.request.args.get("ranking-by")
+    page = flask.request.args.get('page')
+    session = datasources.get_db().create_session()
+    results_count, result_list, good_search_mode = functions.search.universal_search(session, query, ranking, int(page))
+    datasources.get_db().close_session(session)
+    return flask.jsonify({'results_count': results_count, 'result_list': result_list,
+                          'good_search_mode': good_search_mode})
+
+
+@app.route('/news', methods=['GET'])
+def get_a_news():
+    news_id = flask.request.args.get('news_id')
+    _id = flask.request.args.get('id')
+    session = datasources.get_db().create_session()
+    if _id is not None:  # more fast
+        news_detail = datasources.get_db().find_news_by_id(session, _id)
+    else:
+        news_detail = datasources.get_db().find_news_by_source_id(session, news_id)
+    data = {'news_id': news_id, 'review_num': news_detail.review_num, 'word_num': news_detail.word_num,
+            'abstract': news_detail.abstract, 'content': news_detail.content, 'keywords': news_detail.keywords,
+            'title': news_detail.title, 'url': news_detail.url, 'source': news_detail.source,
+            'media_name': news_detail.media_name, 'time': news_detail.time, 'related_id': news_detail.related_id}
+
+    datasources.get_db().close_session(session)
+    return flask.jsonify(data)
+
+
+@app.route('/suggnew/recommend_news', methods=['GET'])
+def related_news():
+    related_id = flask.request.args.get('related_id')
+    session = datasources.get_db().create_session()
+    related_id = related_id.split(',')
+    r = datasources.get_db().find_news_title_by_source_id_list(session, related_id)
+    data = [{'title': subr.title, 'source_id': subr.source_id} for subr in r]
+    datasources.get_db().close_session(session)
+    return data
+
+
+@app.route('/news/review')
+def get_review():
+    new_id = flask.request.args.get('id')
+    session = datasources.get_db().create_session()
+    r = datasources.get_db().find_reviews_by_news_id(session, int(new_id))
+    datasources.get_db().close_session(session)
+    data = [{'agree': review.agree, 'content': review.content,
+             'time': review.time, 'user_id': review.user_id,
+             'user_name': review.user_name, 'area': review.area,
+             'emotion': functions.emotions.analyze_emotion4review(review.content)} for review in r]
+    positive_counts = 0
+    for review in data:
+        positive_counts += review['emotion'] + 1  # negative: -1; positive : 0
+    return flask.jsonify({'review': data, 'emotions': positive_counts*1.0/len(data)})
+
+
+@app.route('/suggnew/hotnews')
+def hotnews():
+    page = int(flask.request.args.get('page'))
+    session = datasources.get_db().create_session()
+    r = functions.suggest.suggest_hot_news(session)
+    datasources.get_db().close_session(session)
+    return flask.jsonify({'content': r})
 
 
 def run():

@@ -29,7 +29,7 @@ class PostingIndex(object):
         pass
 
     @utils.decorator.timer
-    def collect(self, word_ids, action=LogicAction.OR):
+    def collect(self, word_ids, action=LogicAction.OR):  # there is not inexact top K collecting method.
         ans = dict()
         for word_id in word_ids:
             word_posting_list = datasources.get_db().find_word_posting_list_by_word_id(self.session, word_id)

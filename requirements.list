@@ -6,3 +6,6 @@ pymysql
 sqlalchemy
 simplejson
 jieba
+pandas
+bs4
+requests

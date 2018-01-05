@@ -25,15 +25,15 @@ class Updater(object):
     def crawl(self, num=None, numbers=None):
         spiders.spider_manager.SpiderManager().crawl(num, numbers)
 
-    def segment(self):
+    def segment(self):  # text_df is a DataFrame.
         text_df = config.get_spark_session().createDataFrame(datasources.get_db().find_news_plain_text(self.sqlsession))
         update.segment.cut4db(text_df)
 
     def update_statistics(self):
         avg_word_num = 0
         news_num = 0
-        for news in datasources.get_db().find_news_list(self.sqlsession):
-            news.word_num = len(news.posting_list)
+        for news in datasources.get_db().find_news_list(self.sqlsession):  # just update an indicator? efficient op?
+            news.word_num = len(news.posting_list)  # how many posting lists point to this news document.
             avg_word_num += news.word_num
             news_num += 1
             datasources.get_db().upsert_news_or_news_list(self.sqlsession, news, commit_now=False)
@@ -43,11 +43,11 @@ class Updater(object):
         for word in datasources.get_db().find_word_list(self.sqlsession):
             if word.text not in wordset:
                 wordset[word.text] = list()
-            wordset[word.text].append(word)
+            wordset[word.text].append(word)  # load the whole word2posting-list in database and merge them.
         for word_text in wordset:
             if len(wordset[word_text]) > 1:
                 news_ids = set()
-                word_merged = wordset[word_text][0]
+                word_merged = wordset[word_text][0]  # seems to merge in time increasing order.
                 for word in wordset[word_text][1:]:
                     word_merged.cf += word.cf
                     word_merged.df += word.df
@@ -64,6 +64,7 @@ class Updater(object):
 
     def prepossess(self):
         self.segment()
+        # so far we have finished constructing the new posting list
         self.update_statistics()
 
     def update(self, num=20):

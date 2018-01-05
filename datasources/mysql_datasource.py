@@ -3,6 +3,7 @@
 @author: xuesu
 
 """
+import datetime
 import pandas
 import sqlalchemy
 import sqlalchemy.exc
@@ -104,15 +105,20 @@ class MySQLDataSource(object):
         return ans
 
     def find(self, session, qentities,
-             filter_by_condition=None, order_by_condition=None, options=None, pandas_format=False, first=False):
+             filter_by_condition=None, order_by_condition=None, filter_condition=None, limit=None,
+             options=None, pandas_format=False, first=False):
         if isinstance(qentities, list):
             query = session.query(*qentities)
         else:
             query = session.query(qentities)
         if filter_by_condition is not None:
             query = query.filter_by(**filter_by_condition)
+        if filter_condition is not None:
+            query = query.filter(filter_condition)
         if order_by_condition is not None:
             query = query.order_by(order_by_condition)
+        if limit is not None:
+            query = query.limit(limit)
         if options is not None:
             if isinstance(options, list):
                 for option in options:
@@ -152,6 +158,34 @@ class MySQLDataSource(object):
     def find_news_plain_text(self, session):
         return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
                                    entities.news.NewsPlain.content], pandas_format=True)
+
+    def find_news_brief_by_id(self, session, id_list):
+        return self.find(session, [entities.news.NewsPlain.source, entities.news.NewsPlain.source_id,
+                                   entities.news.NewsPlain.title, entities.news.NewsPlain.time,
+                                   entities.news.NewsPlain.id],
+                         filter_by_condition=entities.news.NewsPlain.source_id.in_(id_list))
+
+    def find_news_title_by_source_id_list(self, session, source_id_list):  # TODO: need to test
+        return self.find(session, [entities.news.NewsPlain.source_id,
+                         entities.news.NewsPlain.title],
+                         filter_by_condition=entities.news.NewsPlain.source_id.in_(source_id_list))
+
+    def find_hot_news(self, session, num, review_num=50, delta_day=1):  # FIXME: review_num >=50, delta time < 1d
+        current_time = datetime.datetime.utcnow()
+        one_day_ago = current_time - datetime.timedelta(days=delta_day)
+        return self.find(session, [entities.news.NewsPlain.source_id,
+                                   entities.news.NewsPlain.title,
+                                   entities.news.NewsPlain.abstract,
+                                   entities.news.NewsPlain.time,
+                                   entities.news.NewsPlain.media_name,
+                                   entities.news.NewsPlain.keywords],
+                         filter_condition=(entities.news.NewsPlain.time > one_day_ago),
+                         order_by_condition=sqlalchemy.desc(entities.news.NewsPlain.review_num),
+                         limit=num
+                         )
+
+    def find_reviews_by_news_id(self, session, news_id):
+        return self.find(session, entities.review.ReviewPlain, filter_by_condition={'news_id': news_id})
 
     def upsert_word_or_word_list(self, session, word, commit_now=True):
         return self.upsert_one_or_many(session, word, commit_now)

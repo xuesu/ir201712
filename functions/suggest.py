@@ -12,6 +12,7 @@ import indexes
 import filters
 import utils.decorator
 import utils.utils
+import datasources
 
 
 @utils.decorator.timer
@@ -67,3 +68,30 @@ def suggest_similar_search(word_regex_list, num=None):
 
 def suggest_similar_news(session, news_id):
     pass
+
+
+def suggest_hot_news(session):
+    """
+    check that documents in redis(cache) is not expired 
+    :param session: 
+    :return: 
+    """
+    # check first.
+    # if expired, we should construct 1000 hot news again
+    EXPIRED = True
+    if EXPIRED:
+        r = datasources.get_db().find_hot_news(session, 1000)
+        if len(r) > 10:
+            candidate = r[:10]
+        else:
+            candidate = r
+
+        cache = {news.source_id: {'title': news.title, 'abstract': news.abstract,
+                                  'time': news.time, 'keywords': news.keywords} for news in r}
+        candidate = [{'source_id': news.source_id, 'title': news.title, 'abstract': news.abstract,
+                      'time': news.time, 'keywords': news.keywords} for news in candidate]
+
+        # we should cache the variable cache into redis.
+        return candidate
+    else:  # to read redis.
+        pass

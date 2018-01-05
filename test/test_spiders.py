@@ -23,7 +23,7 @@ class SpiderManagerTest(test.TestCase):
     def tearDown(self):
         pass
 
-    def test_crawl(self):
+    def test_crawl(self):  # TODO: how to update indexes meanwhile crawling
         db = datasources.get_db()
         db.recreate_all_tables()
         session = db.create_session()
