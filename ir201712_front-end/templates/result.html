@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+<head>
+    <meta charset="utf-8">
+    <title>新闻搜索引擎</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="description" content="提供多个站点新闻聚合搜索">
+    <meta http-equiv="pragma"   content="no-cache" />
+    <meta http-equiv="Cache-Control" content="no-cache,must-revalidate" />
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='index/css/base.v.1.4.6.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='index/css/bird.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='index/css/result.css') }}">
+
+    <style>
+        .wrapper .suggestion {
+            border: 1px solid #e8e8e8;
+            width: 622px;
+            -moz-box-shadow: 0px 1px 8px rgba(0, 0, 0, 0.1);
+            -webkit-box-shadow: 0px 1px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0px 1px 8px rgba(0, 0, 0, 0.1);
+            border-top-left-radius: 0px;
+            border-top-right-radius: 0px;
+            border-bottom-right-radius: 2px;
+            border-bottom-left-radius: 2px;
+            top: 43px;
+        }
+
+        .wrapper .suglist {
+            width: 206px;
+        }
+
+        .wrapper .suglist .keyword {
+            color: #7a77c8;
+        }
+
+        .big-scn .suggestion {
+            width: 654px;
+        }
+
+        .big-scn .suglist {
+            width: 236px;
+        }
+
+        .wrapper .suglist {
+            padding: 4px 0
+        }
+    </style>
+</head>
+
+<body>
+<div class="gjss" id="settings-advanced" style="display: none;top:-240px;">
+        <div class="hf-box" id="settings-save-layer">
+            <div class="hf-def">已保存设置，请再执行一遍搜索</div>
+        </div>
+        <div class="gjss-tab">
+            <a uigs-id="tab_set" href="javascript:void(0);" class="js-settings-tab tab-a cur">搜索设置</a>
+
+            <a href="javascript:void(0);" class="close-btn" id="settings-close"></a>
+        </div>
+        <div class="gjss-main">
+            <div class="gjss-sz js-settings-content">
+                <p class="gjss-err js-settings-mask" style="display: none;">搜索设置暂不可用，请启用浏览器的Cookie功能，然后刷新本页。</p>
+                <div class="bg-wkq js-settings-mask" id="settings-tips" style="display: none;"></div>
+
+                <dl>
+                    <dt>搜索结果排序方式</dt>
+                    <dd class="js-as-radio">
+                        <a uigs-id="adv_relevance-ranking" href="javascript:void(0);" data-value="1" class="dk-btn cur">按相关性排序</a>
+                        <a uigs-id="adv_time-descend-ranking" href="javascript:void(0);" data-value="2" class="dk-btn">按时间(降序)排序</a>
+                        <a uigs-id="adv_time-increase-ranking" href="javascript:void(0);" data-value="3" class="dk-btn">按时间(升序)排序</a>
+                        <a uigs-id="adv_hot-ranking" href="javascript:void(0);" data-value="4" class="dk-btn">按热度排序</a>
+                        <input id="ranking-by" type="hidden" name="ranking-by" value="1">
+{#                        写到cookie中去#}
+                    </dd>
+                </dl>
+                <p class="enter" style="padding-top: 20px;">
+                    <a href="javascript:void(0);" id="settings-save" uigs-id="set-save" class="a1">保存</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+    <div class="wrap">
+        <div class="header">
+            <a title="回到首页" href="/" class="logo"><span></span></a>
+
+                <div class="user-box">
+                    <span class="line" id="user-box-line" style="display: none;"></span>
+                    <span class="user-enter">
+                        <span class="s-dw">
+                            <a href="javascript:void(0);" id="search-settings" >搜索设置</a>
+                        </span>
+                    </span>
+                </div>
+            <div class="search-box" style="margin-left: 115px" >
+{#                id="search-box"#}
+{#            <form name="searchForm" id="searchForm" class>#}
+            <form  name="sf" id="sf" class>
+{#                <div class="querybox">#}
+{#                    <div class="qborder">#}
+                    <span class="sec-input-box">
+                          <input type="text" class="sec-input" name="query" id="upquery" value="{{ data.query }}" autocomplete="off" />
+                    </span>
+                    <input type="hidden" name="s_from" value="result_up" />
+                    <span class="enter-input"><input type="submit" value="" id="searchBtn"></span>
+{#                    </div>#}
+{#                </div>#}
+            </form>
+            </div>
+        </div>
+
+
+        <div class="wrapper" id="wrapper">
+            <div id="main" class="main left_res_box">
+                <div class="search-info">
+                    <p class="results_count">找到约 <span id="result_count">{{ data.results_count }}</span> 条结果 （用时 <span id="time_need">{{ data.time_need }}</span> 秒）
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;本次检索结果按照
+                        {% if data.sortby == 4 %}
+                        <b>热度</b>
+                        {% elif data.sortby == 2 %}
+                        <b>时间（降序）</b>
+                        {% elif data.sortby == 3 %}
+                        <b>时间（升序）</b>
+                        {% else %}
+                        <b>相关度</b>
+                        {% endif %}
+                        排序</p>
+                </div>
+                <div>
+                {% if data.currentpage == 1 %}
+                    <div id="tip_out_box" style="width: 650px">
+                        <div id="tip_header">
+                        <div style="width:70px;float:left;">
+                        <img src="/static/index/images/bird.jpg" style="width:48px;">
+                        </div>
+                        <div style="float:left;">
+                            <b style="color:rgb(168,204,78); font-size: 16px;">Snippet from News.so</b>
+
+                        </div>
+                        <div class="clearbox"></div>
+                        </div>
+                        <div id="bird_tips">
+                            新闻snippet生成！！！！{{ data.snippet }}
+                        </div>
+                    </div>
+                {% endif %}
+                    <div class="result" style="word-break: inherit; word-wrap: inherit">
+                        {% for r in data.searchresult %}
+                            <div style="width:548px" class="vrwrap">
+                            <h3 class="vrTitle">
+                                <a target="_blank" href="/news?news_id={{ r.news_id }}">{{ r.title }}</a>
+                            </h3>
+                            <div class="strBox">
+                            <div class="str_info_div">
+                            <p class="str_info">{{ r.abstract }}</p>
+                            <div class="fb">
+                            <cite>{{ r.source }}</cite>&nbsp;&nbsp;&nbsp;<span>{{ r.time }}</span>
+                            </div>
+                            </div>
+                            </div>
+                            <div style="display:none" class="r-sech ext_query">
+                                <span>推荐您相似新闻：</span>
+                            </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div id="right" class="right">
+                <span>这里放相关搜索推荐:</span>
+                <br>
+                {% for q in data.recommendQuery %}
+                <a href="?query={{ q }}" >{{ q }}&nbsp;&nbsp;&nbsp;</a>
+                {% endfor %}
+                <a href="/">
+                <div style="text-align:center;width:300px;border:1px solid LightGray;margin-bottom:6px;color:rgb(168,204,78);margin-top:14px;">
+                <br><br><br>
+                <img src="/static/index/images/smile.jpg" width="53px;">
+                <br><br>
+                <br>
+                <br>
+                </div>
+                </a>
+            </div>
+        </div>
+        <div class="p" id="pagebar_container">
+        {% if data.currentpage > 1 %}
+            <a id="news_previous" href="?query={{ data.query }}&page={{ data.currentpage - 1 }}" class="np">上一页</a>
+        {% else %}
+            <a id="news_previous" class="np" disabled="disabled">上一页</a>
+        {% endif %}
+
+            {% for p in range(1, data.pages) %}
+                {% if p == data.currentpage %}
+                <span>{{ p }}</span>
+                {% else %}
+                <a id="news_page_{{ p }}" href="?query={{ data.query }}&page={{ p }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            <span>{{ data.currentPage }}</span>
+            <a id="news_next" href="?query={{ data.query }}&page={{ data.currentpage + 1 }}" class="np">下一页</a>
+        </div>
+    </div>
+<script>
+
+        var SugPara, uigs_para,
+            msBrowserName = navigator.userAgent.toLowerCase(),
+            msIsSe = false,
+            msIsMSearch = false,
+            hasDoodle = false,
+            queryinput = document.getElementById('query');
+
+        uigs_para = {
+            "uigs_productid": "webapp",
+            "type": "webindex_new",
+            "scrnwi": screen.width,
+            "scrnhi": screen.height,
+            "uigs_pbtag": "A",
+            "uigs_cookie": "SUID,sct",
+            "protocol": location.protocol.toLowerCase() == "https:" ? "https" : "http"
+        };
+
+        SugPara = {
+            "enableSug": true,
+            "sugType": "web",
+            "domain": document.domain,
+            "productId": "web",
+            "sugFormName": "sf",
+            "inputid": "query",
+            "submitId": "stb",
+            "useParent": 0,
+            "sugglocation": "index",
+            "showVr": true,
+            "showHotwords": true
+        };
+
+
+        function mk_con() {
+            console.info('mk_con()');
+            try {
+                window.external.metasearch('make_connection', 'www.google.com.hk');
+            } catch (e) {}
+        }
+
+        if (/se 2\.x/i.test(msBrowserName)) {
+            msIsSe = true;
+        }
+
+        if (/metasr/i.test(msBrowserName)) {
+            msIsMSearch = true;
+        }
+
+        if (queryinput) {
+            if (msIsSe && msIsMSearch) {
+                if (queryinput.addEventListener) {
+                    queryinput.addEventListener('keypress', mk_con, false);
+                    queryinput.addEventListener('keydown', mk_con, false)
+                } else if (queryinput.attachEvent) {
+                    queryinput.attachEvent('onkeypress', mk_con);
+                    queryinput.attachEvent('onkeydown', mk_con);
+                } else {
+                    queryinput.onkeypress = mk_con;
+                    queryinput.onkeydown = mk_con;
+                }
+            }
+        }
+
+        window.m_s_index = function() {
+            var w = document.sf.query,
+                c = Math.round((new Date().getTime() + Math.random()) * 1000);
+            console.log('w:', w);
+            w.focus();
+
+            if (new RegExp("kw=([^&]+)").test(location.search)) {
+                if (w.value.length == 0) {
+                    w.value = decodeURIComponent(RegExp.$1);
+                }
+            }
+
+            if (document.cookie.indexOf("cookietest=") < 0) {
+                document.cookie = "cookietest=" + c + ";path=/;expires=Sun, 29 July 2026 00:00:00 UTC"
+            }
+        };
+
+        function st(self, p, product, anchor) {
+            var searchBox = document.sf.query,
+                query = encodeURIComponent(searchBox.value),
+
+                productUrl = {
+                    "web": 'search?ie=utf8&query='
+                },
+                newHref = productUrl[product] || self.href;
+
+            function getConnectSymbol(url) {
+                return url.indexOf("?") > -1 ? '&' : '?';
+            }
+
+            if (searchBox && searchBox.value !== '') {
+
+                if (productUrl[product]) {
+                    newHref = productUrl[product] + query;
+                } else if (newHref.indexOf("kw=") > 0) {
+                    newHref = newHref.replace(new RegExp("kw=[^&$]*"), "kw=" + query)
+                } else {
+                    newHref += getConnectSymbol(newHref) + 'kw=' + query;
+                }
+            }
+
+            if (p) {
+                newHref += getConnectSymbol(newHref) + "p=" + p;
+            }
+
+            if (anchor && anchor.length > 0) {
+                newHref += "#" + anchor;
+            }
+
+            self.href = newHref;
+        }
+
+        window.cid = function(o, p) {
+            var w = document.sf.query,
+                q = encodeURIComponent(w.value);
+
+            if (!q) {
+                o.href += "?cid=" + p
+            } else {
+                if (p === "web2ww") {
+                    o.href += "s/?cid=web2ww&w=" + q
+                } else if (p === "web2bk") {
+                    o.href += "Search.e?sp=S" + q + "&cid=web2bk"
+                }
+            }
+        };
+
+        window.m_s_index();
+
+    </script>
+    <script src="{{ url_for('static', filename='js/lib/jquery-3.2.1.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='js/lib/jquery.mousewheel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lib/juicer-min.js') }}"></script>
+
+    <script>
+        src2 = "/static/js/sugg_new.v.100.js?" + Math.random();
+        node2 = "<script charset=\"gbk\" type=\"text/javascript\" src="+ src2 + "'></s" + "cript>";
+        $('body').append(node2);
+
+
+        src = "/static/index/js/base.v.1.1.9.js?" + Math.random();
+        node = "<script src=" + src + "'></s"+"cript>";
+        $('body').append(node);
+    </script>
+</body>
+
+</html>

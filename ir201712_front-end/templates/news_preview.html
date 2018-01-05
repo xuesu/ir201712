@@ -1,0 +1,105 @@
+
+!DOCTYPE html>
+<html lang="cn">
+
+<head>
+    <meta charset="utf-8">
+    <title>新闻搜索引擎</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="description" content="提供多个站点新闻聚合搜索">
+    <meta http-equiv="pragma"   content="no-cache" />
+<meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+<title>{{ data.title }}</title>
+<meta name="Keywords" content=""/>
+
+<meta name="image:背景图" content="/static/preview/background.jpg" />
+<meta name="if:平铺背景" content=""/>
+<meta name="group1:" content="内容宽度800px#内容宽度500px|内容宽度600px|内容宽度700px|内容宽度800px|内容宽度900px|内容宽度1000px"/>
+<meta name="color:背景" content="#EEAE93"/>
+<meta name="color:标题" content="#fff"/>
+
+<link type="text/css" rel="stylesheet" href="/static/preview/1.css?13"/>
+<style>
+
+.bg{-webkit-background-size:100% 100%;background-image:url(/static/preview/background.jpg);}
+
+.bg{background-color:#EEAE93;}
+.u-tit a{color:#fff;}
+.m-nav a{color:#fff;}
+.u-about{color:#fff;}
+
+.g-box{width:800px;}
+
+</style>
+</head>
+
+<body>
+<div class="bg"></div>
+<div class="p-bd">
+<div class="g-hd">
+	<div class="g-box">
+    	<h1 class="u-tit"><a href="/">News.So 镜像</a></h1>
+        <div class="u-about"></div>
+    </div>
+</div>
+<div class="g-mn" style="padding:0 0 20px">
+	<div class="g-box f-cb">
+
+        <div class="m-posts">
+            <h1 style="font-size: 34px"><b>{{ data.title }}</b></h1>
+            <div style="margin:30px 0 40px">
+                	<span>新闻爬自：{{ data.source }}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span>时间：{{ data.time }}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span>评论数：留空</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <a href="{{ data.real_url }}">原网页链接：{{ data.real_url }}</a>
+            </div>
+        	<div class="m-post m-post-text">
+            	<div class="cont ">
+
+
+                    <div class="text f-cb">
+                    <p>{{ data.content }}</p>
+                    </div>
+
+                </div>
+                <div class="subinfo">
+                </div>
+
+            </div>
+
+        </div>
+        <div class="m-subinfo2">
+            <div >以下是推荐新闻：</div>
+                <ul class="list">
+                    {% for t in data.recommendnews %}
+                        <li><a href="/news?news_id={{ t.news_id }}"><b>{{ t.title }}</b></a></li>
+                    {% endfor %}
+                </ul>
+        </div>
+    	<div class="m-subinfo2">
+        	<div class="nctitle">评论</div>
+            <div class="comment-color">评论色彩分析：<span></span></div>
+            <ul class="list">
+
+            </ul>
+       </div>
+
+
+    </div>
+</div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/lib/jquery-3.2.1.js') }}"></script>
+
+<link media='screen' type='text/css' rel='stylesheet' href='/static/preview/pagephotoshow.min.css'/>
+<script type='text/javascript' src='/static/preview/pagephotoshow.min.js'></script>
+<script type='text/javascript'>P('loft.w.g').initPagePhotoShow(document.body,{});</script>
+<script type='text/javascript'>window.pagewidget=true;</script>
+
+{#<script src="/static/preview/themecommon.js?0027" type="text/javascript"></script>#}
+{#<script>var _gaq = _gaq || [];_gaq.push(['_setAccount', 'UA-31007899-1'],['_setLocalGifPath', '/UA-31007899-1/__utm.gif'],['_setLocalRemoteServerMode']);_gaq.push(['_setDomainName', 'lofter.com']);_gaq.push(['_trackPageview']);(function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'http://wr.da.netease.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })();</script>#}
+<script>
+</script>
+</body>
+</html>
