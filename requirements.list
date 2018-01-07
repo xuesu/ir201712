@@ -1,8 +1,13 @@
 pyyaml
 pyspark
 Flask
+flask-api
 nose
 pymysql
 sqlalchemy
 simplejson
 jieba
+matplotlib
+pandas
+bs4
+demjson

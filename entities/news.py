@@ -28,6 +28,7 @@ class NewsPlain(entities.SQLALCHEMY_BASE):
         sina = 1
         tencent = 2
         toutiao = 3
+        ifeng = 4
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     source_id = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.String(30), unique=True))

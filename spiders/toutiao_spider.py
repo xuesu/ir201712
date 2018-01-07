@@ -5,7 +5,10 @@
 """
 import bs4
 import datetime
+import demjson
 import simplejson as json
+import random
+import time
 
 import datasources
 import entities.news
@@ -17,19 +20,14 @@ import utils.utils
 logger = logs.loggers.LoggersHolder().get_logger("spiders")
 
 
-class SinaSpider(spiders.base_spider.BaseSpider):
+class ToutiaoSpider(spiders.base_spider.BaseSpider):
     def __init__(self):
-        super(SinaSpider, self).__init__()
-        # 新浪新闻翻页地址,show_num=22,page=1,2,3……
-        self.sina_news_roll_url = r'http://api.roll.news.sina.com.cn/zt_list?channel=news&cat_1=shxw&cat_2==zqsk||=qwys||=shwx||=fz-shyf&level==1||=2&show_ext=1&show_all=1&show_num={}&tag=1&format=json&page={}&callback=newsloadercallback&_=1509122181439'
-        # 相关新闻翻页地址,pageurl=url,offset=0,5,10……
-        self.sina_related_news_roll_url = r'http://cre.mix.sina.com.cn/api/v3/get?rfunc=103&fields=url&feed_fmt=1&cateid=1o_1r&cre=newspagepc&mod=f&merge=3&statics=1&this_page=1&dedup=32&pageurl={}&offset={}&length=5&lid=-2000&callback=feedCardJsonpCallback&_=1509184623811'
-        # 新浪评论翻页地址,page_size取评论数（最大取100）
-        self.sina_review_roll_url = r'http://comment5.news.sina.com.cn/page/info?version=1&format=js&channel=sh&newsid={}&group=0&compress=0&ie=utf-8&oe=utf-8&page=1&page_size={}&jsvar=loader_1509195624657_56915173'
-        # 每条新闻爬取的最大评论数
-        self.max_reviews_num = 200
-        # 一页的新闻数
-        self.sina_each_page_num = 22
+        super(ToutiaoSpider, self).__init__()
+        self.toutiao_news_roll_url = r'https://www.toutiao.com/api/pc/feed/?category=news_society&utm_source=toutiao&widen=1&max_behot_time={}&max_behot_time_tmp={}&tadrequire=true&as=A125BA93E6A7F96&cp=5A3697EF09466E1&_signature=kuBu4QAAyOGy.bX4veRHx5Lgbv'
+        # group_id={}&item_id={}
+        self.toutiao_review_roll_url = r'https://www.toutiao.com/api/comment/list/?group_id={}&item_id={}&offset=0&count=20'
+        self.toutiao_num = 30000
+        self.toutiao_each_page_num = 7
 
     def get_news(self, news_num):
         """
@@ -55,22 +53,25 @@ class SinaSpider(spiders.base_spider.BaseSpider):
         """
         session = datasources.get_db().create_session()
         news_count = 0
+        now_time = int(time.time())
         # 一共要爬取的页数
-        news_num_per_page = min(self.sina_each_page_num, news_num)
+        news_num_per_page = min(self.toutiao_each_page_num, news_num)
         pages_num = int(news_num / news_num_per_page)
         for i in range(pages_num * 2):
-            page_url = self.sina_news_roll_url.format(news_num_per_page, i + 1)
+            page_url = self.toutiao_news_roll_url.format(now_time, now_time)
             try:
                 # 设置headers,读取第i+1页的新闻数据
-                page = self.get_response('http://news.sina.com.cn/society/', page_url)
+                page = self.get_response('https://www.toutiao.com/ch/news_society/', page_url)
                 page = page[page.index('{'):page.rindex('}') + 1]
                 # 转为json格式
                 jd = json.loads(page)
+                now_time = jd['next']['max_behot_time']
             except Exception as e:
                 logger.warning('Crawling Roll Failed: {}.'.format(page_url))
+                now_time -= random.randint(0, 3600)
                 continue
             logger.info('Crawling Roll Success: {}.'.format(page_url))
-            for news in jd['result']['data']:
+            for news in jd['data']:
                 '''
                 #获取新闻信息：source_id,url,title,keywords,meida_name,abstract,time,news_content,review_num
                 '''
@@ -78,54 +79,59 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 # time、news_content、review_num到新闻正文页获取
                 # ext2="sh:comos-fynffnz3077632:0"
                 # 提取出comos-fynffnz3077632与相关新闻id格式保持一致
+                if news['is_feed_ad']:
+                    continue
                 news_obj = entities.news.NewsPlain()
                 try:
-                    news_obj.source_id = news['ext2'].split(':')[1]
+                    news_obj.source_id = 'a'+news['group_id']
                     if datasources.get_db().find_news_by_source_id(session, source_id=news_obj.source_id):
                         continue
-                    news_obj.url = news['url']
+                    news_obj.url = 'https://www.toutiao.com/' + news_obj.source_id
                     news_obj.title = news['title']
-                    news_obj.keywords = news['keywords']
-                    news_obj.media_name = news['media_name']
-                    news_obj.abstract = news['ext5']
-                    news_obj.source = news_obj.SourceEnum.sina
-                    seconds = float(news['createtime'])
-                    news_obj.time = datetime.datetime.fromtimestamp(seconds)
+                    news_obj.keywords = ','.join(news['label'])
+                    news_obj.media_name = news['source']
+                    if news_obj.media_name == '悟空问答':
+                        continue
+                    news_obj.abstract = news['abstract']
+                    news_obj.review_num = int(news['comments_count'])
+                    news_obj.source = news_obj.SourceEnum.toutiao
+
                     # 设置headers
                     # 获取新闻正文页html,提取news_content
-                    self.headers[
-                        'Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
                     news_html = self.get_response(page_url, news_obj.url)
-                    soup = bs4.BeautifulSoup(news_html, 'html.parser')
-                    # set default
-                    self.headers['Accept'] = '*/*'
+                    news_html = news_html[news_html.index('articleInfo:'):news_html.rindex('commentInfo')]
+                    news_html = news_html[news_html.index('{'):news_html.rindex('}') + 1]
+                    dj = demjson.decode(news_html)
+                    soup = bs4.BeautifulSoup(dj['content'], 'html.parser').text
+                    soup = bs4.BeautifulSoup(soup, 'html.parser')
                     # ‘#’查找id名，‘.’查找class名
-                    news_obj.content = '\n'.join([p.text for p in soup.select('#article')[0].select('p')])
+                    news_obj.time = datetime.datetime.strptime(dj['subInfo']['time'], "%Y-%m-%d %H:%M:%S")
+                    news_obj.content = '\n'.join([p.text for p in soup.select('p')])
+                    group_id = dj['groupId']
+                    item_id = dj['itemId']
                     logger.info("Crawling Content Success: {}".format(news_obj.url))
                 except Exception as e:
-                    # set default
-                    self.headers['Accept'] = '*/*'
                     logger.warning("Crawling Content Failed: {}".format(news_obj.url))
                     continue
-                news_obj.review_num = 0
-                review_url = self.sina_review_roll_url.format(news_obj.source_id, self.max_reviews_num)
+
+                review_url = self.toutiao_review_roll_url.format(group_id, item_id)
                 try:
                     '''
                     #获取评论信息：user_id,user_name,area,review_content,time,agree
                     '''
                     # self.review_num是真实的评论数量，可作为热度的参考值。
                     # 但是评论内容最多取100条
-                    review_page = self.get_response(news_obj.url, review_url)
-                    jd = json.loads(review_page[review_page.index('{'):review_page.rindex('}') + 1])
-                    news_obj.review_num = jd['result']['count']['show']
-                    for review in jd['result']['cmntlist']:
+                    review_page = self.get_response('https://www.toutiao.com/a{}/'.format(group_id), review_url)
+                    jd = json.loads(review_page)
+                    news_obj.review_num = jd['data']['total']
+                    for review in jd['data']['comments']:
                         review_obj = entities.review.ReviewPlain()
-                        review_obj.user_id = review['uid']
-                        review_obj.user_name = review['nick']
-                        review_obj.area = review['area']
-                        review_obj.content = review['content']
-                        review_obj.time = review['time']
-                        review_obj.agree = review['agree']
+                        review_obj.user_id = review['user']['user_id']
+                        review_obj.user_name = review['user']['name']
+                        review_obj.content = review['text']
+                        seconds = float(review['create_time'])
+                        review_obj.time = datetime.datetime.fromtimestamp(seconds)
+                        review_obj.agree = review['digg_count']
                         news_obj.reviews.append(review_obj)
                     logger.info("Crawling Review Page Success: {}".format(review_url))
                 except Exception as e:
