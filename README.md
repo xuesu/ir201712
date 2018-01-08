@@ -17,7 +17,11 @@ A simple information retrieval system using **python3** and spark.
     - Then create a test db: `CREATE DATABASE ir_test character set UTF8mb4 collate utf8mb4_bin;`
     - Create a new user: `CREATE USER 'IRDBA'@'localhost' IDENTIFIED BY 'complexpwd';`
     - Grant privilege to the user: `GRANT ALL ON ir.* TO 'IRDBA'@'localhost';GRANT ALL ON ir_test.* TO 'IRDBA'@'localhost';`
-    
+
+### Redis
+6. install Redis
+    - In Ubuntu: `sudo apt-get install redis-server`
+
 ### virtualenv
     
 1. install anaconda

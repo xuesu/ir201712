@@ -12,6 +12,7 @@ import config.datasource_config_manager
 import config.functions_config_manager
 import config.indexes_config_manager
 import config.spark_config_manager
+import config.cache_config_manager
 
 cur_dir = os.path.realpath(__file__)[:-len("config/__init__.py")]
 config_dir = os.path.join(cur_dir, "config")
@@ -23,6 +24,7 @@ datasource_config = None
 functions_config = None
 indexes_config = None
 spark_config = None
+cache_config = None
 __spark_context = None
 __spark_session = None
 
@@ -48,6 +50,6 @@ def init():
         config.functions_config = config.functions_config_manager.FunctionsConfig(config_data['functions'])
         config.indexes_config = config.indexes_config_manager.IndexesConfig(config_data["indexes"])
         config.spark_config = config.spark_config_manager.SparkConfig(config_data['spark'])
-
+        config.cache_config = config.cache_config_manager.CacheConfig(config_data['cache'])
 
 init()

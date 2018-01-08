@@ -9,3 +9,6 @@ jieba
 pandas
 bs4
 requests
+redis
+gensim
+sklearn

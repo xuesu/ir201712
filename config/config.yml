@@ -8,7 +8,7 @@ datasource:
   user: IRDBA
   password: complexpwd
   database_name: ir
-  test_database_name: ir_test
+  test_database_name: ir_test1
   pool_size: 5
   max_overflow: 10
   timeout: 60
@@ -45,3 +45,7 @@ indexes:
       penalties: [1, 1, 1] # add, del, rep
   word_cooccurrence:
     model_cache_path: models/word_cooccurrence
+cache:
+  redis_host: localhost
+  redis_port: 6379
+  expire_delta: 7200

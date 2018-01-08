@@ -15,6 +15,7 @@ class TestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestCase, self).__init__(*args, **kwargs)
         config.spark_config.testing = True
+        config.spark_config.driver_mode = False
 
 
 def runSQL():

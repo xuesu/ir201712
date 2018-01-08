@@ -7,6 +7,8 @@ import sqlalchemy
 import sqlalchemy.orm
 
 import entities
+import entities.news
+import entities.review
 
 
 class WordPosting(entities.SQLALCHEMY_BASE):

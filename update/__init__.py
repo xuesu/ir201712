@@ -72,6 +72,7 @@ class Updater(object):
         self.crawl(num)
         self.prepossess()
         datasources.get_db().close_session(self.sqlsession)
+        print('wait...  we need to init IndexHolder...')
         indexes.IndexHolder().init(force_refresh=True)
         self.sqlsession = None
 

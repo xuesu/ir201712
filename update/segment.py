@@ -8,6 +8,7 @@ import config
 import utils.decorator
 
 
+
 def tokenize(unicode_sentence, mode="default", HMM=True):
     """
             Tokenize a sentence and yields tuples of (word, start, end)
@@ -119,3 +120,5 @@ def cut4db(text_df):
     rdd = text_df.rdd.flatMap(segment_map).groupByKey()
     b_spark_config = config.get_spark_context().broadcast(config.spark_config)
     rdd.foreachPartition(lambda rd: saving_foreachPartition(rd, b_spark_config=b_spark_config))
+
+

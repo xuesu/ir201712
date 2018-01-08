@@ -77,7 +77,7 @@ def search():
     ranking = flask.request.args.get("ranking-by")
     page = flask.request.args.get('page')
     session = datasources.get_db().create_session()
-    results_count, result_list, good_search_mode = functions.search.universal_search(session, query, ranking, int(page))
+    results_count, result_list, good_search_mode = functions.search.universal_search(session, query, int(ranking), int(page))
     datasources.get_db().close_session(session)
     return flask.jsonify({'results_count': results_count, 'result_list': result_list,
                           'good_search_mode': good_search_mode})
@@ -94,22 +94,24 @@ def get_a_news():
         news_detail = datasources.get_db().find_news_by_source_id(session, news_id)
     data = {'news_id': news_id, 'review_num': news_detail.review_num, 'word_num': news_detail.word_num,
             'abstract': news_detail.abstract, 'content': news_detail.content, 'keywords': news_detail.keywords,
-            'title': news_detail.title, 'url': news_detail.url, 'source': news_detail.source,
+            'title': news_detail.title, 'url': news_detail.url, 'id': news_detail.id,
             'media_name': news_detail.media_name, 'time': news_detail.time, 'related_id': news_detail.related_id}
-
+    print(data)
     datasources.get_db().close_session(session)
     return flask.jsonify(data)
 
 
 @app.route('/suggnew/recommend_news', methods=['GET'])
 def related_news():
-    related_id = flask.request.args.get('related_id')
+    # related_id = flask.request.args.get('related_id')
+    source_id = flask.request.args.get('source_id')
+
     session = datasources.get_db().create_session()
-    related_id = related_id.split(',')
-    r = datasources.get_db().find_news_title_by_source_id_list(session, related_id)
-    data = [{'title': subr.title, 'source_id': subr.source_id} for subr in r]
+
+    data = functions.suggest.suggest_similar_news(session, source_id)
+
     datasources.get_db().close_session(session)
-    return data
+    return flask.jsonify({'content': data})
 
 
 @app.route('/news/review')
@@ -119,8 +121,6 @@ def get_review():
     r = datasources.get_db().find_reviews_by_news_id(session, int(new_id))
     datasources.get_db().close_session(session)
     data = [{'agree': review.agree, 'content': review.content,
-             'time': review.time, 'user_id': review.user_id,
-             'user_name': review.user_name, 'area': review.area,
              'emotion': functions.emotions.analyze_emotion4review(review.content)} for review in r]
     positive_counts = 0
     for review in data:
@@ -132,12 +132,14 @@ def get_review():
 def hotnews():
     page = int(flask.request.args.get('page'))
     session = datasources.get_db().create_session()
-    r = functions.suggest.suggest_hot_news(session)
+    r = functions.suggest.suggest_hot_news(session, page)
     datasources.get_db().close_session(session)
     return flask.jsonify({'content': r})
 
 
 def run():
+    config.spark_config.testing = True
+    config.spark_config.driver_mode = False
     th = threading.Thread(target=api.basic.backdoor)
     th.start()
     # disable autoreload to enable TRUE DEBUG!

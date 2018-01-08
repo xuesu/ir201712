@@ -48,10 +48,10 @@
         <div class="m-posts">
             <h1 style="font-size: 34px"><b>{{ data.title }}</b></h1>
             <div style="margin:30px 0 40px">
-                	<span>新闻爬自：{{ data.source }}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                	<span>媒体：{{ data.media_name }}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <span>时间：{{ data.time }}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <span>评论数：留空</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <a href="{{ data.real_url }}">原网页链接：{{ data.real_url }}</a>
+                    <span>评论数：{{ data.review_num}}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <a href="{{ data.url }}">原网页链接：{{ data.url }}</a>
             </div>
         	<div class="m-post m-post-text">
             	<div class="cont ">
@@ -68,17 +68,15 @@
             </div>
 
         </div>
-        <div class="m-subinfo2">
+        <div class="m-subinfo1">
             <div >以下是推荐新闻：</div>
                 <ul class="list">
-                    {% for t in data.recommendnews %}
-                        <li><a href="/news?news_id={{ t.news_id }}"><b>{{ t.title }}</b></a></li>
-                    {% endfor %}
+
                 </ul>
         </div>
     	<div class="m-subinfo2">
         	<div class="nctitle">评论</div>
-            <div class="comment-color">评论色彩分析：<span></span></div>
+            <div class="comment-color">评论色彩分析：<b><span></span></b></div>
             <ul class="list">
 
             </ul>
@@ -100,6 +98,39 @@
 {#<script src="/static/preview/themecommon.js?0027" type="text/javascript"></script>#}
 {#<script>var _gaq = _gaq || [];_gaq.push(['_setAccount', 'UA-31007899-1'],['_setLocalGifPath', '/UA-31007899-1/__utm.gif'],['_setLocalRemoteServerMode']);_gaq.push(['_setDomainName', 'lofter.com']);_gaq.push(['_trackPageview']);(function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'http://wr.da.netease.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })();</script>#}
 <script>
+    $(document).ready(function () {
+        $.getJSON("/news/review?id={{ data.id }}", function (data) {
+            review = data.review;
+            emotions = data.emotions;
+            console.info(data);
+            if (emotions > 0.5)
+            {
+                $('.m-subinfo2 .comment-color b span').text('评论显得更积极，分数为'+ emotions);
+            }
+            else {
+                $('.comment-color span').text('评论显得更消极，分数为'+ emotions);
+
+            }
+            review.forEach(function (e){
+                var node = "<li>" + e.user_name + ": "+ e.content + "  " + e.time + " " + "点赞数：" + e.agree + " 情感色彩：";
+                if(e.emotion == 0)
+                    node += "积极";
+                else {
+                    node += "消极";
+                }
+                $('.m-subinfo2 .list').append(node);
+
+            })
+        });
+        $.getJSON("/suggnew/recommend_news?source_id={{ data.news_id }}", function (data) {
+            content = data.content;
+            content.forEach(function (e) {
+                var node = "<li><a href=" + e.fake_url + "><b>" + e.title + "</b></a></li>"
+                $('.m-subinfo1 .list').append(node)
+            })
+        })
+    })
 </script>
 </body>
+
 </html>

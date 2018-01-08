@@ -115,7 +115,7 @@
         <div class="wrapper" id="wrapper">
             <div id="main" class="main left_res_box">
                 <div class="search-info">
-                    <p class="results_count">找到约 <span id="result_count">{{ data.results_count }}</span> 条结果 （用时 <span id="time_need">{{ data.time_need }}</span> 秒）
+                    <p class="results_count">找到约 <span id="result_count">{{ data.results_count }}</span> 条结果 （用时 <span id="time_need">{{ data.time_cost }}</span> 秒）
                         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;本次检索结果按照
                         {% if data.sortby == 4 %}
                         <b>热度</b>
@@ -142,21 +142,27 @@
                         <div class="clearbox"></div>
                         </div>
                         <div id="bird_tips">
-                            新闻snippet生成！！！！{{ data.snippet }}
+                            <!--新闻snippet生成！！！！{{ data.snippet }}-->
                         </div>
                     </div>
                 {% endif %}
                     <div class="result" style="word-break: inherit; word-wrap: inherit">
-                        {% for r in data.searchresult %}
+                        {% for r in data.result_list %}
                             <div style="width:548px" class="vrwrap">
                             <h3 class="vrTitle">
-                                <a target="_blank" href="/news?news_id={{ r.news_id }}">{{ r.title }}</a>
+                                <a target="_blank" href="{{ r.fake_url }}">{{ r.title }}</a>
                             </h3>
                             <div class="strBox">
                             <div class="str_info_div">
-                            <p class="str_info">{{ r.abstract }}</p>
+                            <p class="str_info" id="{{ r.id }}"></p>
                             <div class="fb">
-                            <cite>{{ r.source }}</cite>&nbsp;&nbsp;&nbsp;<span>{{ r.time }}</span>
+                            <cite>分数：
+                                {% if data.sortby == 1 or data.sortby == 4 %}
+                                {{ r.score }}
+                                {% else %}
+                                （即时间）
+                                {% endif %}
+                            </cite>&nbsp;&nbsp;&nbsp;<span>{{ r.time }}</span>
                             </div>
                             </div>
                             </div>
@@ -169,11 +175,8 @@
                 </div>
             </div>
             <div id="right" class="right">
-                <span>这里放相关搜索推荐:</span>
+
                 <br>
-                {% for q in data.recommendQuery %}
-                <a href="?query={{ q }}" >{{ q }}&nbsp;&nbsp;&nbsp;</a>
-                {% endfor %}
                 <a href="/">
                 <div style="text-align:center;width:300px;border:1px solid LightGray;margin-bottom:6px;color:rgb(168,204,78);margin-top:14px;">
                 <br><br><br>
@@ -183,6 +186,7 @@
                 <br>
                 </div>
                 </a>
+                <span>这里放相关搜索推荐:</span>
             </div>
         </div>
         <div class="p" id="pagebar_container">
@@ -192,7 +196,7 @@
             <a id="news_previous" class="np" disabled="disabled">上一页</a>
         {% endif %}
 
-            {% for p in range(1, data.pages) %}
+            {% for p in range(1, data.pages + 1) %}
                 {% if p == data.currentpage %}
                 <span>{{ p }}</span>
                 {% else %}
@@ -352,6 +356,24 @@
         node = "<script src=" + src + "'></s"+"cript>";
         $('body').append(node);
     </script>
+    <script>
+        $.getJSON('/suggnew/recommend_searchwords?search_text=' + "{{data.good_search_mode}}", function (data) {
+            var content = data.content;
+            content.forEach(function (e) {
+                e.forEach(function (c) {
+                    $('#right').append("<a href='?query=" + c + "'>" + c + "&nbsp;&nbsp;&nbsp;</a>")
+                })
+            })
+        } );
+        var result_list = {{ data.result_list_2 | safe }};
+        result_list.forEach(function (e){
+            $.getJSON('/search/snippet?search_text=' + e.good_search_mode + '&id=' + e.id, function (data) {
+                $('#'+ e.id).text(data.content);
+            })
+        })
+
+    </script>
+
 </body>
 
 </html>

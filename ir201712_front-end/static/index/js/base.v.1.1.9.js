@@ -2829,8 +2829,8 @@
             n = t.data.length;
         if (n)
             for (var o = 0; o < n; o++)
-                _[t.data[o].preview_url] || _[t.data[o].title] || i.data.push(t.data[o]),
-                _[t.data[o].preview_url] = 1,
+                _[t.data[o].fake_url] || _[t.data[o].title] || i.data.push(t.data[o]),
+                _[t.data[o].fake_url] = 1,
                 _[t.data[o].title] = 1;
         return i
     }
@@ -2856,8 +2856,8 @@
                     o("request");
             },
             "success": function(t) {
-                // t = {data: [{title:,preview_url:,behot_time, source: , brief:}], message:"success", page: , ret:}
-                // console.info(t);
+                // t = {data: [{title:,fake_url:,behot_time, source: , brief:}], message:"success", page: , ret:}
+                console.info(t);
                 var r = void 0;
                 return "success" !== t.message || t.reventonCode ? (i.show(),
                     void o("error")) : t.data.length ? (1 === b && $("#news-list").empty(),
@@ -2920,8 +2920,8 @@
             return t && "function" == typeof Symbol && t.constructor === Symbol && t !== Symbol.prototype ? "symbol" : typeof t
         },
         m = n(0), //hotWords  index  getHotWordUrl   
-        v = '{@each hotWords as word, index}{@if index<10}<li><a href="$${word|getHotWordUrl}" uigs-id="news_hot-news${index}" target="_blank" title="${word}">${word}</a></li>{@/if}{@/each}', //data gengxin: news.title, brief, news.time, sources, preview_url
-        y = juicer("{@each data as news}<li><div class=\"info-box\"><h2><a href=\"$${news.preview_url}\" uigs-id=\"news_link\" click-opt=\"[{'category':'open','tag':'go_detail','datetime':'${news.behot_time|formatTime}','value':'${news.group_id}','label':'click_headline'}]\" target=\"_blank\" title=\"${news.title}\">${news.title}</a></h2><p>${news.brief}</p><p class=\"time\"><span>${news.source}</span>${news.behot_time|formatPublistTime}</p></div></li>{@/each}"),
+        v = '{@each hotWords as word, index}{@if index<10}<li><a href="$${word|getHotWordUrl}" uigs-id="news_hot-news${index}" target="_blank" title="${word}">${word}</a></li>{@/if}{@/each}', //data gengxin: news.title, brief, news.time, sources, fake_url
+        y = juicer("{@each data as news}<li><div class=\"info-box\"><h2><a href=\"$${news.fake_url}\" uigs-id=\"news_link\" click-opt=\"[{'category':'open','tag':'go_detail','datetime':'${news.behot_time|formatTime}','value':'${news.group_id}','label':'click_headline'}]\" target=\"_blank\" title=\"${news.title}\">${news.title}</a></h2><p>${news.brief}</p><p class=\"time\"><span>${news.source}</span>${news.behot_time|formatPublistTime}</p></div></li>{@/each}"),
         b = 1,
         _ = {},
         x = $("<div/>"),

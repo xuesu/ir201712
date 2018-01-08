@@ -159,18 +159,26 @@ class MySQLDataSource(object):
         return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
                                    entities.news.NewsPlain.content], pandas_format=True)
 
+    def find_news_abstract_by_source_id(self, session, source_id):
+        return self.find(session, entities.news.NewsPlain.abstract, filter_by_condition={'source_id': source_id}, first=True)
+
     def find_news_brief_by_id(self, session, id_list):
         return self.find(session, [entities.news.NewsPlain.source, entities.news.NewsPlain.source_id,
                                    entities.news.NewsPlain.title, entities.news.NewsPlain.time,
                                    entities.news.NewsPlain.id],
-                         filter_by_condition=entities.news.NewsPlain.source_id.in_(id_list))
+                         filter_condition=entities.news.NewsPlain.id.in_(id_list))
+
+    def find_news_time_and_review_num_by_id(self, session, id_list):
+        return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.time, entities.news.NewsPlain.review_num],
+                         filter_condition=entities.news.NewsPlain.id.in_(id_list),
+                         order_by_condition=sqlalchemy.desc(entities.news.NewsPlain.time))
 
     def find_news_title_by_source_id_list(self, session, source_id_list):  # TODO: need to test
         return self.find(session, [entities.news.NewsPlain.source_id,
                          entities.news.NewsPlain.title],
-                         filter_by_condition=entities.news.NewsPlain.source_id.in_(source_id_list))
+                         filter_condition=entities.news.NewsPlain.source_id.in_(source_id_list))
 
-    def find_hot_news(self, session, num, review_num=50, delta_day=1):  # FIXME: review_num >=50, delta time < 1d
+    def find_hot_news(self, session, num, review_num=50, delta_day=100):  # FIXME: review_num >=50, delta time < 1d
         current_time = datetime.datetime.utcnow()
         one_day_ago = current_time - datetime.timedelta(days=delta_day)
         return self.find(session, [entities.news.NewsPlain.source_id,

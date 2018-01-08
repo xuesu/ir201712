@@ -16,7 +16,7 @@ RELEVENCE_RANKING = 1
 TIME_DESCEND_RANKING = 2
 TIME_INCREASE_RANKING = 3
 HOT_RANKING = 4
-
+URL = "http://0.0.0.0:8888"
 
 @app.route('/')
 def index():
@@ -48,18 +48,21 @@ def search():
         return
     print 'paras for searching: ', paras
     print 'starting to searching...'
-    resp = requests.get("localhost:8888/search", params=paras)
+    resp = requests.get(URL + "/search", params=paras)
     # parse the resp and render html.
 
-    data = resp.content
+    data = json.loads(resp.content)
+    data['result_list_2'] = []
     for r in data['result_list']:
         r['fake_url'] = '/news?news_id=' + r['news_id']
+        data['result_list_2'].append({'id': r['id'], 'good_search_mode': data['good_search_mode']})
     data['currentpage'] = int(paras['page'])
-    data['pages'] = 10 if len(data['results_count'])/10 > 10 else len(data['results_count'])/10 + 1
+    data['pages'] = 10 if data['results_count']/10 > 10 else data['results_count']/10 + 1
     data['query'] = request.args.get('query')
     data['time_cost'] = time.time() - _start_t
     data['sortby'] = paras['ranking-by']
     print 'search result: ', data
+    data['result_list_2'] = json.dumps(data['result_list_2'])
     return render_template('result.html', data=data)
 
 
@@ -69,16 +72,16 @@ def get_snippet():
     if _id is None:
         return
     search_text = request.args.get('search_text')
-    resp = requests.get("localhost:8888/snippet", {'news_id': _id, 'search_text': search_text})
-    print 'snippet: ', resp.content
+    resp = requests.get(URL + "/snippet", {'news_id': _id, 'search_text': search_text})
+    print 'snippet: ', json.loads(resp.content)
     return resp.content
 
 
 @app.route('/suggnew/recommend_searchwords')
 def recommend_searchwords():
     search_text = request.args.get('search_text')
-    resp = requests.get('localhost:8888/similar_search', {'search_text': search_text})
-    print 'recommend search words:', resp.content
+    resp = requests.get(URL + '/similar_search', {'search_text': search_text})
+    print 'recommend search words:', json.loads(resp.content)
     return resp.content
 
 
@@ -95,9 +98,9 @@ def news():
     评论及情感色彩异步加载， 推荐新闻也异步请求。
     """
     news_id = request.args.get('news_id', 'fake-0000')
-    resp = requests.get('localhost:8888/news', {'news_id': news_id})
-    print 'detail of the news: ', resp.content
-    return render_template('news_preview.html', data=resp.content)
+    resp = requests.get(URL + '/news', {'news_id': news_id})
+    print 'detail of the news: ', json.loads(resp.content)
+    return render_template('news_preview.html', data=json.loads(resp.content))
 
 
 @app.route('/suggnew/recommend_news')
@@ -108,25 +111,37 @@ def recommend_news():
     目前是直接用related_id.
     :return: 
     """
-    NAVIVE_METHOD = True
+    NAVIVE_METHOD = False
     if NAVIVE_METHOD:
         related_id = request.args.get('related_id')
         if related_id.strip() == "":
             return
-        resp = requests.get('localhost:8888/suggnew/recommend_news', related_id=related_id)
-        print 'recommend news and their source id', resp.content
-        return resp.content
+        resp = requests.get(URL + '/suggnew/recommend_news', {'related_id':related_id})
+        print 'recommend news and their source id', json.loads(resp.content)
+        data = json.loads(resp.content)
+        for r in data['content']:
+            r['fake_url'] = "/news?news_id=" + r['source_id']
+        return jsonify(data)
     else:
-        raise NotImplementedError
+        source_id = request.args.get('source_id')
+        if source_id is None:
+            return jsonify([])
+        resp = requests.get(URL + '/suggnew/recommend_news', {'source_id': source_id})
+        data = json.loads(resp.content)
+        for r in data['content']:
+            r['fake_url'] = "/news?news_id=" + r['source_id']
+        return jsonify(data)
+
 
 
 @app.route('/news/review')
 def get_review():
     _id = request.args.get('id')
+    print(_id)
     if _id is None:
         return
-    resp = requests.get('localhost:8888/news/review', _d=_id)
-    print 'review and their emotions:', resp.content
+    resp = requests.get(URL + '/news/review', params={'id':_id})
+    # print 'review and their emotions:', json.loads(resp.content)
     return resp.content
 
 
@@ -137,8 +152,9 @@ def word_completion():
     :return: 
     """
     key = request.args.get('key')
-    resp = requests.get('localhost:8888/autocomplete/', search_text=key)
-    comlete_list = resp.content['content']
+    resp = requests.get(URL + '/autocomplete/', {'search_text': key})
+    data = json.loads(resp.content)
+    comlete_list = data['content']
     no_sense_2 = ["0;0;0;0"] * len(comlete_list)
     no_sense_3 = [""] * len(comlete_list)
     comlete_str = json.dumps([key, comlete_list, no_sense_2, no_sense_3, ["0"],"","suglabId_1"])
@@ -152,7 +168,7 @@ def hotwords():
     最热新闻中的关键词表里 (名词+动词) 的集合
     :return: 
     """
-    top_words = ['王斌教授发了CCF A类会议', '比特币暴涨', '何以解忧？唯有..']
+    top_words = ['王斌教授发了CCF A类会议', '比特币 暴涨', '何以解忧？唯有..']
     top_words_str = json.dumps(top_words)
     return "var top_words = %s" % top_words_str
 
@@ -168,23 +184,15 @@ def hotnews():
     # db_session = datasources.get_db().create_session()
     # hotnews_list = functions.hot.hot_news(db_session, (page-1)*10, 10)
     # FIXME: need to reformat each element.
-    resp = requests.get('localhost:8888/suggnew/hotnews', page=page)
+    resp = requests.get(URL + '/suggnew/hotnews', {'page': page})
 
-    data = resp.content['content']
+    data = json.loads(resp.content)['content']
     print 'hot news: ', data
     for r in data:
-        r['news_id'] = r['source_id'].pop()
+        r['news_id'] = r.pop('source_id')
         r['fake_url'] = '/news?news_id=' + r['news_id']
-        r['behot_time'] = r['time'].pop()
-        r['brief'] = r['abstract'].pop()
-
-    news_format = dict()
-    news_format['news_id'] = 'fake000001'
-    news_format['title'] = '我们'
-    news_format['source'] = 'source'
-    news_format['preview_url'] = '/news?news_id=' + news_format['news_id']
-    news_format['brief'] = 'brief'
-    news_format['behot_time'] = '10:10'
+        r['behot_time'] = r.pop('time')
+        r['brief'] = r.pop('abstract')
 
     response['data'] = data
     return jsonify(response)
@@ -198,4 +206,4 @@ def sugg_answer():
 
 if __name__ == '__main__':
     app.secret_key = 'AT8*3Kf?!@JOEWKHldfsdoei'
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)

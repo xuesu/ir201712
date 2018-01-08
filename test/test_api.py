@@ -46,7 +46,7 @@ class APITest(test.TestCase):
 
     def test_suggest_gen_snippet(self):
         resp = self.app.get("/snippet/", query_string={"search_text": "护士 直播", "length": 15, "news_id": 1})
-        print(resp.data)
+        print('snippet: ', resp.data)
         self.assertEqual(resp.status_code, 200)
         resp = self.app.get("/snippet/", query_string={"search_text": "护* 直播", "length": 15, "news_id": 1})
         self.assertEqual(resp.status_code, 200)

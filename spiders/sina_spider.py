@@ -67,7 +67,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
         news_count = 0
         # 一共要爬取的页数
         news_num_per_page = min(self.sina_each_page_num, news_num)
-        pages_num = int(news_num / news_num_per_page)
+        pages_num = 0 if news_num_per_page == 0 else int(news_num / news_num_per_page)
         for i in range(pages_num * 2):
             logger.info('get %dth page news,each page %d news.' % (i + 1, news_num_per_page))
             page_url = self.sina_news_roll_url.format(news_num_per_page, i + 1)

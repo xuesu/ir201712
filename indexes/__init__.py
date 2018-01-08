@@ -17,6 +17,7 @@ class IndexHolder(object):
     """
 
     def __init__(self):
+        print('just for debug: starting to init IndexHolder.')
         self.posting_index = indexes.posting_index.PostingIndex()
         self.vocab_index = indexes.vocab_index.VocabIndex()
         self.word_text_index = indexes.word_text_index.WordTextIndex()
@@ -28,6 +29,7 @@ class IndexHolder(object):
         self.vocab_index.init(force_refresh)
         self.word_text_index.init(force_refresh)
         self.word_coocurrence_index.init(force_refresh)
+        print('-----Init index_holder successfully!')
 
     def build(self):
         self.posting_index.build()
