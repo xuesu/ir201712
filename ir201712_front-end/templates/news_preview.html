@@ -98,7 +98,7 @@
 {#<script src="/static/preview/themecommon.js?0027" type="text/javascript"></script>#}
 {#<script>var _gaq = _gaq || [];_gaq.push(['_setAccount', 'UA-31007899-1'],['_setLocalGifPath', '/UA-31007899-1/__utm.gif'],['_setLocalRemoteServerMode']);_gaq.push(['_setDomainName', 'lofter.com']);_gaq.push(['_trackPageview']);(function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'http://wr.da.netease.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })();</script>#}
 <script>
-    $(document).ready(function () {
+    (function () {
         $.getJSON("/news/review?id={{ data.id }}", function (data) {
             review = data.review;
             emotions = data.emotions;
@@ -129,7 +129,7 @@
                 $('.m-subinfo1 .list').append(node)
             })
         })
-    })
+    })()
 </script>
 </body>
 

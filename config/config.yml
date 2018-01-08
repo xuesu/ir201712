@@ -31,7 +31,7 @@ functions:
     candidate_length: 3
     default_number: 3
   snippet:
-    max_length: 50 # 字数
+    max_length: 100 # 字数
   emotions:
     port: 8090 # restful API地址，当然也可以直接请求这个地址。
     host: localhost

@@ -2,12 +2,12 @@ import gensim
 from sklearn.externals import joblib
 import jieba
 
+
 def corpora_process(raw_corpora):
     corpora_cut_list = []
     # 切词处理
     for text in raw_corpora:
-        item_cut = list(jieba.cut(text))
-        corpora_cut_list.append(item_cut)
+        corpora_cut_list.append(list(jieba.cut(text)))
     # 生成字典
     dictionary = gensim.corpora.Dictionary(corpora_cut_list)
     # 存储字典
@@ -49,7 +49,9 @@ def similarity_id(test_data, feature_nums=400,similarity_nums=5):
     # similarity_lsi = similarities.Similarity.load('Similarity-LSI-index.0')
 
     # 测试
+    print()
     test_data_cut = list(jieba.cut(test_data))
+
     dictionary = gensim.corpora.Dictionary.load('./models/dictionary.mtx')
     test_data_vector = dictionary.doc2bow(test_data_cut)
     test_data_tfidf = tf_idf_model[test_data_vector]

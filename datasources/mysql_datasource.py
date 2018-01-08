@@ -29,9 +29,9 @@ class MySQLDataSource(object):
         self.engine = self.connect()
         self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
         self.scope_session_maker = sqlalchemy.orm.scoped_session(self.session_maker)
-        if (testing or datasource_config.rebuild) and config.spark_config.driver_mode:
-            self.drop_all_tables()
-        self.create_all_tables()
+        # if (testing or datasource_config.rebuild) and config.spark_config.driver_mode:
+        #     self.drop_all_tables()
+        # self.create_all_tables()
 
     def __del__(self):
         self.close_all_session()
@@ -220,3 +220,9 @@ class MySQLDataSource(object):
     def find_word_plain_text_ordered_by_text(self, session):
         ans = self.find(session, [entities.words.Word.text], order_by_condition="text")
         return [a[0] for a in ans]
+
+if __name__ == '__main__':
+    my = MySQLDataSource(True)
+    session = my.create_session()
+    r = my.find_news_abstract_by_source_id(session, "comos-fyqcwaq6099146")
+    print(r)
