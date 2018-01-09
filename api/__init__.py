@@ -85,25 +85,23 @@ def search():
 
 @app.route('/news', methods=['GET'])
 def get_a_news():
-    news_id = flask.request.args.get('news_id')
+
     _id = flask.request.args.get('id')
     session = datasources.get_db().create_session()
     if _id is not None:  # more fast
         news_detail = datasources.get_db().find_news_by_id(session, _id)
     else:
-        news_detail = datasources.get_db().find_news_by_source_id(session, news_id)
-    data = {'news_id': news_id, 'review_num': news_detail.review_num, 'word_num': news_detail.word_num,
+        news_detail = datasources.get_db().find_news_by_source_id(session, _id)
+    data = {'review_num': news_detail.review_num, 'word_num': news_detail.word_num,
             'abstract': news_detail.abstract, 'content': news_detail.content, 'keywords': news_detail.keywords,
             'title': news_detail.title, 'url': news_detail.url, 'id': news_detail.id,
-            'media_name': news_detail.media_name, 'time': news_detail.time, 'related_id': news_detail.related_id}
-    # print(data)
+            'media_name': news_detail.media_name, 'time': news_detail.time}
     datasources.get_db().close_session(session)
     return flask.jsonify(data)
 
 
 @app.route('/suggnew/recommend_news', methods=['GET'])
 def related_news():
-    # related_id = flask.request.args.get('related_id')
     source_id = flask.request.args.get('source_id')
 
     session = datasources.get_db().create_session()

@@ -29,9 +29,9 @@ class IndexesTest(test.TestCase):
             datasources.get_db().upsert_word_or_word_list(self.session, entities.words.Word(text=word_text))
         index = indexes.vocab_index.VocabIndex()
         index.init()
-        self.assertIsNotNone(index.collect("10"))
-        self.assertEqual(len(index.collect("10").posting_list), 0)
-        self.assertIsNone(index.collect("a"))
+        self.assertIsNotNone(index.collect(1))
+        self.assertEqual(len(index.collect(1).posting), 0)
+        self.assertIsNone(index.collect(10))
 
     def test_word_text_index(self):
         word_text_samples = ["野猫", "野小猫", "野生小猫", "猫", "野狗", "豹猫", "小野猫",
@@ -88,14 +88,9 @@ class IndexesTest(test.TestCase):
         self.assertListEqual(word_texts, word_text_ans)
 
     def test_posting_index(self):
-        news_list = [entities.news.NewsPlain(source_id=1), entities.news.NewsPlain(source_id=2)]
-        news_list = datasources.get_db().upsert_news_or_news_list(self.session, news_list)
-        word_posting_list = [entities.words.WordPosting(news_id=news_list[0].id),
-                             entities.words.WordPosting(news_id=news_list[0].id),
-                             entities.words.WordPosting(news_id=news_list[1].id)]
         words_list = [entities.words.Word(text="a"), entities.words.Word(text="b")]
-        words_list[0].posting_list = word_posting_list[:1]
-        words_list[1].posting_list = word_posting_list[1:]
+        words_list[0].posting = {1: [2, 3], 3: [0, 1]}
+        words_list[1].posting = {1: [1, 1]}
         words_list = datasources.get_db().upsert_word_or_word_list(self.session, words_list)
         index = indexes.posting_index.PostingIndex()
         index.init(force_refresh=True)

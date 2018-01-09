@@ -14,16 +14,18 @@ import re
 def get_date_before(shift=0):
     # 返回当前日期shift天后的日期，正数代表将来，负数代表过去，格式：‘2017-11-15’
     now_time = datetime.datetime.now()
-    date = now_time + datetime.timedelta(days=shift)
+    date = now_time - datetime.timedelta(days=shift)
     return date.strftime('%Y-%m-%d')
 
 
 def remove_wild_char(s):
-    s = re.sub(r"[^\s\w`=\\;.!/_,$^*+\"\'\[\]—！，。？、~@#￥%…&（）：；《》“”()»〔〕?\-]", "", s)
-    s = re.sub("\r", "\n", s)
-    s = re.sub("\n\n", "\n", s)
-    s = re.sub("\n +", "\n", s)
-    return s.strip()
+    if s is not None:
+        s = re.sub(r"[^\s\w`=\\;.!/_,$^*+\"\'\[\]—！，。？、~@#￥%…&（）：；《》“”()»〔〕?\-]", "", s)
+        s = re.sub("\r", "\n", s)
+        s = re.sub("\n\n", "\n", s)
+        s = re.sub("\n +", "\n", s)
+        return s.strip()
+    return ''
 
 
 def remove_wild_char_in_news(news):
@@ -31,12 +33,14 @@ def remove_wild_char_in_news(news):
     news.content = remove_wild_char(news.content)
     news.abstract = remove_wild_char(news.abstract)
     news.keywords = remove_wild_char(news.keywords)
+    news.media_name = news.media_name.strip()[:19]
     for review in news.reviews:
         remove_wild_char_in_review(review)
 
 
 def remove_wild_char_in_review(review):
     review.content = remove_wild_char(review.content)
+    review.user_name = remove_wild_char(review.user_name)
 
 
 def remove_new_line(s):
@@ -72,3 +76,13 @@ def replace_partial_list(l1, mat, t):
             for i in range(t):
                 l1[sout_idxes[i]] = in_vec[i]
             res.append(copy.deepcopy(res))
+
+
+def parse_timestr(timestr):
+    for time_format in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y/%m/%d %H:%M:%S', '%Y/%m/%d %H:%M']:
+        try:
+            time = datetime.datetime.strptime(timestr, time_format)
+            return time
+        except ValueError:
+            pass
+    raise ValueError()

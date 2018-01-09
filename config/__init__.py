@@ -52,4 +52,5 @@ def init():
         config.spark_config = config.spark_config_manager.SparkConfig(config_data['spark'])
         config.cache_config = config.cache_config_manager.CacheConfig(config_data['cache'])
 
+
 init()

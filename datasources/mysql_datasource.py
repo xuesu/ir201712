@@ -8,6 +8,7 @@ import pandas
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
+import sqlalchemy.pool
 
 import config
 import entities
@@ -27,21 +28,24 @@ class MySQLDataSource(object):
         self.session_pool = list()
         self.former_action = dict()
         self.engine = self.connect()
+        if (testing or datasource_config.rebuild) and config.spark_config.driver_mode:
+            self.drop_all_tables()
+        self.create_all_tables()
         self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
-        self.scope_session_maker = sqlalchemy.orm.scoped_session(self.session_maker)
-        # if (testing or datasource_config.rebuild) and config.spark_config.driver_mode:
-        #     self.drop_all_tables()
-        # self.create_all_tables()
 
     def __del__(self):
         self.close_all_session()
 
     def create_session(self):
-        session = self.scope_session_maker()
+        session = self.session_maker()
         self.session_pool.append(session)
         return session
 
     def close_session(self, session):
+        """
+        Those are all because of commit_now = False
+        :return:
+        """
         try:
             self.commit_session(session)
         except sqlalchemy.exc.InvalidRequestError as e:
@@ -71,6 +75,7 @@ class MySQLDataSource(object):
                 self.database_name
             ),
             encoding="utf-8",
+            poolclass=sqlalchemy.pool.QueuePool,
             pool_size=datasource_config.pool_size,
             max_overflow=datasource_config.max_overflow,
             pool_timeout=datasource_config.timeout
@@ -87,6 +92,10 @@ class MySQLDataSource(object):
         """
         if forced:
             self.close_all_session()
+        tables = entities.SQLALCHEMY_BASE.metadata.sorted_tables
+        tables.reverse()
+        for table in tables:
+            table.delete()
         entities.SQLALCHEMY_BASE.metadata.drop_all(self.engine)
 
     def recreate_all_tables(self):
@@ -106,7 +115,7 @@ class MySQLDataSource(object):
 
     def find(self, session, qentities,
              filter_by_condition=None, order_by_condition=None, filter_condition=None, limit=None,
-             options=None, pandas_format=False, first=False):
+             options=None, pandas_format=False, first=False, expunge=True):
         if isinstance(qentities, list):
             query = session.query(*qentities)
         else:
@@ -144,45 +153,38 @@ class MySQLDataSource(object):
         return self.find(session, entities.news.NewsPlain)
 
     def find_news_by_id(self, session, id):
-        ans_list = self.find(session, entities.news.NewsPlain, filter_by_condition={"id": id})
-        if ans_list:
-            return ans_list[0]
-        return None
+        return self.find(session, entities.news.NewsPlain, filter_by_condition={"id": id}, first=True)
 
-    def find_news_by_source_id(self, session, source_id):
-        ans_list = self.find(session, entities.news.NewsPlain, filter_by_condition={"source_id": source_id})
-        if ans_list:
-            return ans_list[0]
-        return None
+    def find_news_by_url(self, session, url):
+        return self.find(session, entities.news.NewsPlain, filter_by_condition={"url": url}, first=True)
 
     def find_news_plain_text(self, session):
         return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
                                    entities.news.NewsPlain.content], pandas_format=True)
 
-    def find_news_abstract_and_content_by_source_id(self, session, source_id):
+    def find_news_abstract_and_content_by_id(self, session, id):
         return self.find(session, [entities.news.NewsPlain.abstract,
-                         entities.news.NewsPlain.content], filter_by_condition={'source_id': source_id}, first=True)
+                         entities.news.NewsPlain.content], filter_by_condition={'id': id}, first=True)
 
-    def find_news_brief_by_id(self, session, id_list):
-        return self.find(session, [entities.news.NewsPlain.source, entities.news.NewsPlain.source_id,
-                                   entities.news.NewsPlain.title, entities.news.NewsPlain.time,
-                                   entities.news.NewsPlain.id],
+    def find_news_brief_by_news_id_list(self, session, id_list):
+        return self.find(session, [entities.news.NewsPlain.source, entities.news.NewsPlain.title,
+                                   entities.news.NewsPlain.time, entities.news.NewsPlain.id],
                          filter_condition=entities.news.NewsPlain.id.in_(id_list))
 
-    def find_news_time_and_review_num_by_id(self, session, id_list):
-        return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.time, entities.news.NewsPlain.review_num],
+    def find_news_time_and_review_num_by_news_id_list(self, session, id_list):
+        return self.find(session,
+                         [entities.news.NewsPlain.id, entities.news.NewsPlain.time, entities.news.NewsPlain.review_num],
                          filter_condition=entities.news.NewsPlain.id.in_(id_list),
                          order_by_condition=sqlalchemy.desc(entities.news.NewsPlain.time))
 
-    def find_news_title_by_source_id_list(self, session, source_id_list):  # TODO: need to test
-        return self.find(session, [entities.news.NewsPlain.source_id,
-                         entities.news.NewsPlain.title],
-                         filter_condition=entities.news.NewsPlain.source_id.in_(source_id_list))
+    def find_news_title_by_news_id_list(self, session, id_list):  # TODO: need to test
+        return self.find(session, [entities.news.NewsPlain.title],
+                         filter_condition=entities.news.NewsPlain.id.in_(id_list))
 
     def find_hot_news(self, session, num, review_num=50, delta_day=100):  # FIXME: review_num >=50, delta time < 1d
         current_time = datetime.datetime.utcnow()
         one_day_ago = current_time - datetime.timedelta(days=delta_day)
-        return self.find(session, [entities.news.NewsPlain.source_id,
+        return self.find(session, [entities.news.NewsPlain.id,
                                    entities.news.NewsPlain.title,
                                    entities.news.NewsPlain.abstract,
                                    entities.news.NewsPlain.time,
@@ -203,27 +205,12 @@ class MySQLDataSource(object):
         return self.find(session, entities.words.Word, options=(sqlalchemy.orm.undefer("df"),
                                                                 sqlalchemy.orm.undefer("cf")))
 
-    def find_word_by_text(self, session, text):
-        ans_list = self.find(session, entities.words.Word, filter_by_condition={"text": text})
-        if ans_list:
-            return ans_list[0]
-        return None
+    def find_word_id_by_text(self, session, text):
+        return self.find(session, entities.words.Word.id, filter_by_condition={"text": text}, first=True)
 
     def delete_word(self, session, word, commit_now=True):
         self.delete(session, word, commit_now)
 
-    def find_word_posting_list_by_word_id(self, session, word_id, news_id=None):
-        filter_by_condition = {"word_id": word_id}
-        if news_id is not None:
-            filter_by_condition = {"word_id": word_id, "news_id": news_id}
-        return self.find(session, entities.words.WordPosting, filter_by_condition=filter_by_condition)
-
     def find_word_plain_text_ordered_by_text(self, session):
         ans = self.find(session, [entities.words.Word.text], order_by_condition="text")
         return [a[0] for a in ans]
-
-if __name__ == '__main__':
-    my = MySQLDataSource(True)
-    session = my.create_session()
-    r = my.find_news_abstract_by_source_id(session, "comos-fyqcwaq6099146")
-    print(r)

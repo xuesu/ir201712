@@ -12,7 +12,14 @@ import requests
 
 class BaseSpider(abc.ABC):
     def __init__(self):
-        self.headers = dict()
+        self.headers = {
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'zh-CN,zh;q=0.8',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36'
+        }
         self.user_agents = [
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
@@ -67,7 +74,7 @@ class BaseSpider(abc.ABC):
             try:
                 # if not proxy:
                 time.sleep(delay_time)
-                with requests.get(url, headers=self.headers, timeout=30) as resp:
+                with requests.get(url, headers=self.headers, timeout=3) as resp:
                     return str(resp.content, encoding=encoding)
                     # .Session().
                     # else:

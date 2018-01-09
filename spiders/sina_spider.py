@@ -31,45 +31,11 @@ class SinaSpider(spiders.base_spider.BaseSpider):
         # 一页的新闻数
         self.sina_each_page_num = 22
 
-        # header['Host']和Header['Referer']根据需要添加
-        self.headers = {
-            'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, sdch',
-            'Accept-Language': 'zh-CN,zh;q=0.8',
-            'Cache-Control': 'max-age=0',
-            'Connection': 'keep-alive',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36'
-        }
-
     def get_news(self, news_num):
-        """
-        '获取如下数据：
-            '获取新闻数据：
-                source_id:新闻id,
-                url:新闻链接,
-                title:新闻标题,
-                keywords:新闻关键词,
-                media_name:发布媒体名称,
-                abstract:新闻摘要,
-                time:发布时间,
-                news_content:新闻内容,
-                review_num:评论条数
-            '相关新闻数据:related_id:相关的新闻id列表
-            '评论数据:
-                user_id:用户id,
-                user_name:用户昵称,
-                area:评论地点,
-                review_content:评论内容,
-                time:评论时间,
-                agree:点赞数
-        """
         session = datasources.get_db().create_session()
         news_count = 0
-        # 一共要爬取的页数
         news_num_per_page = min(self.sina_each_page_num, news_num)
-        pages_num = 0 if news_num_per_page == 0 else int(news_num / news_num_per_page)
-        for i in range(pages_num * 2):
-            logger.info('get %dth page news,each page %d news.' % (i + 1, news_num_per_page))
+        for i in range(news_num):
             page_url = self.sina_news_roll_url.format(news_num_per_page, i + 1)
             try:
                 # 设置headers,读取第i+1页的新闻数据
@@ -78,23 +44,16 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                 # 转为json格式
                 jd = json.loads(page)
             except Exception as e:
-                logger.warning('Failed: ' + page_url)
+                logger.warning('Crawling Roll Failed: {}.'.format(page_url))
                 continue
+            logger.info('Crawling Roll Success: {}.'.format(page_url))
             for news in jd['result']['data']:
-                '''
-                #获取新闻信息：source_id,url,title,keywords,meida_name,abstract,time,news_content,review_num
-                '''
-                # source_id,url,title,keywords,media_name,abstract
-                # time、news_content、review_num到新闻正文页获取
-                news_count += 1
-                # ext2="sh:comos-fynffnz3077632:0"
-                # 提取出comos-fynffnz3077632与相关新闻id格式保持一致
                 news_obj = entities.news.NewsPlain()
                 try:
-                    news_obj.source_id = news['ext2'].split(':')[1]
-                    if datasources.get_db().find_news_by_source_id(session, source_id=news_obj.source_id):
-                        continue
+                    source_id = news['ext2'].split(':')[1]
                     news_obj.url = news['url']
+                    if datasources.get_db().find_news_by_url(session, news_obj.url):
+                        continue
                     news_obj.title = news['title']
                     news_obj.keywords = news['keywords']
                     news_obj.media_name = news['media_name']
@@ -119,7 +78,7 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                     logger.warning("Crawling Content Failed: {}".format(news_obj.url))
                     continue
                 news_obj.review_num = 0
-                review_url = self.sina_review_roll_url.format(news_obj.source_id, self.max_reviews_num)
+                review_url = self.sina_review_roll_url.format(source_id, self.max_reviews_num)
                 try:
                     '''
                     #获取评论信息：user_id,user_name,area,review_content,time,agree
@@ -143,8 +102,11 @@ class SinaSpider(spiders.base_spider.BaseSpider):
                     # 评论出错直接忽略
                     logger.warning("Crawling Review Page Failed: {}".format(review_url))
                 utils.utils.remove_wild_char_in_news(news_obj)
-                datasources.get_db().upsert_news_or_news_list(session, news_obj, commit_now=False)
-            datasources.get_db().commit_session(session)
+                datasources.get_db().upsert_news_or_news_list(session, news_obj)
+                news_count += 1
+                if news_count >= news_num:
+                    break
             if news_count >= news_num:
                 break
+        datasources.get_db().commit_session(session)
         datasources.get_db().close_session(session)

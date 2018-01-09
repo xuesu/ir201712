@@ -10,12 +10,6 @@ import utils.decorator
 class VocabIndex(object):
     def __init__(self):
         self.vocab = None
-        # ORM session, plz keep it.
-        # but try to limit the access of deferred columns
-        self.session = datasources.get_db().create_session()
-
-    def __del__(self):
-        datasources.get_db().close_session(self.session)
 
     def init(self, force_refresh=False):
         if self.vocab is None:
@@ -26,10 +20,10 @@ class VocabIndex(object):
     def build(self):
         pass
 
-    def collect(self, text_list):
+    def collect(self, id_list):
         if self.vocab is None:
             self.init()
-        if isinstance(text_list, str):
-            return self.vocab.get(text_list)
+        if isinstance(id_list, list):
+            return [self.vocab.get(text) for text in id_list]
         else:
-            return [self.vocab.get(text) for text in text_list]
+            return self.vocab.get(id_list)

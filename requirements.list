@@ -1,6 +1,7 @@
 pyyaml
 pyspark
 Flask
+flask-api
 nose
 pymysql
 sqlalchemy
@@ -12,3 +13,5 @@ requests
 redis
 gensim
 sklearn
+matplotlib
+demjson
