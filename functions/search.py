@@ -71,6 +71,12 @@ def search(word_text_list, ranking):
 def universal_search(session, search_text, ranking, page, num_in_page=10):
     # segment search_text. TODO
     word_regex_list = search_text.split(' ')
+    word_regex_list = list(set(word_regex_list))
+    try:
+        # print(word_regex_list)
+        word_regex_list.remove('')
+    except ValueError:
+        pass
     stop_nature_list = ['', 'w', 'x', 'y', 'c']
     word_processed_list = list()
     for u in word_regex_list:
@@ -103,6 +109,11 @@ def universal_search(session, search_text, ranking, page, num_in_page=10):
     regex_search_list = list()
     if fl:
         regex_search_list = functions.suggest.suggest_similar_search(word_regex_list, 1)[0]
+        try:
+            regex_search_list.remove('：')
+        except ValueError:
+            pass
+
     segment_word_4_search_list += regex_search_list
     segment_word_4_search_list = list(set(segment_word_4_search_list))
     print('segment for search: ', segment_word_4_search_list)

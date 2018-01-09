@@ -96,7 +96,7 @@ def get_a_news():
             'abstract': news_detail.abstract, 'content': news_detail.content, 'keywords': news_detail.keywords,
             'title': news_detail.title, 'url': news_detail.url, 'id': news_detail.id,
             'media_name': news_detail.media_name, 'time': news_detail.time, 'related_id': news_detail.related_id}
-    print(data)
+    # print(data)
     datasources.get_db().close_session(session)
     return flask.jsonify(data)
 
