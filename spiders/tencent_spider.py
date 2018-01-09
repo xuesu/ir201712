@@ -32,31 +32,9 @@ class TencentSpider(spiders.base_spider.BaseSpider):
         self.tencent_review_roll_url = r'http://coral.qq.com/article/{}/comment/v2?callback=jQuery1124020207774121939615_1511705939893&orinum=100&oriorder=o&pageflag=1&cursor=0&scorecursor=0&orirepnum=2&reporder=o&reppageflag=1&source=1&_=1511705939894'
 
     def get_news(self, news_num):
-        """
-        '获取如下数据：
-            '获取新闻数据：
-                source_id:新闻id,
-                url:新闻链接,
-                title:新闻标题,
-                keywords:新闻关键词,
-                media_name:发布媒体名称,
-                abstract:新闻摘要,
-                time:发布时间,
-                news_content:新闻内容,
-                review_num:评论条数
-            '相关新闻数据:related_id:相关的新闻id列表
-            '评论数据:
-                user_id:用户id,
-                user_name:用户昵称,
-                area:评论地点,
-                review_content:评论内容,
-                time:评论时间,
-                agree:点赞数
-        """
         session = datasources.get_db().create_session()
         news_count = 0
-        day_num = (news_num + self.tencent_each_page_num - 1) // self.tencent_each_page_num * 2
-        for delta_day in range(day_num):
+        for delta_day in range(news_num):
             date = utils.utils.get_date_before(delta_day)
             # 每天最多三页新闻：3*50
             for page_index in range(1):
@@ -94,6 +72,8 @@ class TencentSpider(spiders.base_spider.BaseSpider):
                         logger.warning('Crawling Roll Failed: {}.'.format(page_url))
                         continue
                     news_obj.url = news.a['href']
+                    if datasources.get_db().find_news_by_url(session, news_obj.url):
+                        continue
                     news_obj.title = news.a.text
                     news_obj.source = news_obj.SourceEnum.tencent
                     try:
@@ -112,7 +92,6 @@ class TencentSpider(spiders.base_spider.BaseSpider):
                         review_page_id = review_info.strip()
                         new_info = str(soup.html.head.find_next(name='script', attrs={'type': 'text/javascript'}))
                         id_str = new_info.split('\n')[6]
-                        news_obj.source_id = id_str[id_str.index('\'') + 1:id_str.rindex('\'')]
                         # keywords_str just like tags:['a','b','c'],
                         keywords_str = new_info.split('\n')[11]
                         news_obj.keywords = keywords_str[keywords_str.index('[') + 1:keywords_str.rindex(']')]
@@ -152,7 +131,7 @@ class TencentSpider(spiders.base_spider.BaseSpider):
                                     review_obj.area = review_obj.area[-19:]
                                 news_obj.reviews.append(review_obj)
                         except Exception as e:  # 评论出错直接忽略
-                            logger.warning("Handling an invalid comment Failed.")
+                            logger.warning("An invalid comment.")
                     utils.utils.remove_wild_char_in_news(news_obj)
                     datasources.get_db().upsert_news_or_news_list(session, news_obj, commit_now=False)
                     news_count += 1

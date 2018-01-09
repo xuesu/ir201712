@@ -8,8 +8,6 @@ import sys
 import time
 import json
 import requests
-reload(sys)
-sys.setdefaultencoding('utf8')
 app = Flask(__name__)
 
 RELEVENCE_RANKING = 1
@@ -111,26 +109,14 @@ def recommend_news():
     目前是直接用related_id.
     :return: 
     """
-    NAVIVE_METHOD = False
-    if NAVIVE_METHOD:
-        related_id = request.args.get('related_id')
-        if related_id.strip() == "":
-            return
-        resp = requests.get(URL + '/suggnew/recommend_news', {'related_id':related_id})
-        print 'recommend news and their source id', json.loads(resp.content)
-        data = json.loads(resp.content)
-        for r in data['content']:
-            r['fake_url'] = "/news?news_id=" + r['source_id']
-        return jsonify(data)
-    else:
-        source_id = request.args.get('source_id')
-        if source_id is None:
-            return jsonify([])
-        resp = requests.get(URL + '/suggnew/recommend_news', {'source_id': source_id})
-        data = json.loads(resp.content)
-        for r in data['content']:
-            r['fake_url'] = "/news?news_id=" + r['source_id']
-        return jsonify(data)
+    source_id = request.args.get('source_id')
+    if source_id is None:
+        return jsonify([])
+    resp = requests.get(URL + '/suggnew/recommend_news', {'source_id': source_id})
+    data = json.loads(resp.content)
+    for r in data['content']:
+        r['fake_url'] = "/news?news_id=" + r['source_id']
+    return jsonify(data)
 
 
 

@@ -8,20 +8,15 @@ datasource:
   user: IRDBA
   password: complexpwd
   database_name: ir
-  test_database_name: ir_test1
-  pool_size: 5
-  max_overflow: 10
-  timeout: 60
+  test_database_name: ir_test
+  pool_size: 50
+  max_overflow: 100
+  timeout: 15
   rebuild: False
 spark:
   master: local
   app_name: ir
   spark.executorEnv.PYTHONHASHSEED: 0
-sorter:
-  bm25:
-    k: 1.5
-    b: 0.75
-    title_bias: 2
 functions:
   autocomplete:
     default_number: 3
@@ -45,6 +40,7 @@ indexes:
       penalties: [1, 1, 1] # add, del, rep
   word_cooccurrence:
     model_cache_path: models/word_cooccurrence
+    window_length: 50
 cache:
   redis_host: localhost
   redis_port: 6379

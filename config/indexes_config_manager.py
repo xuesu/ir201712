@@ -27,3 +27,4 @@ class IndexesConfig(object):
             self.word_cooccurrence_model_cache_path = word_cooccurrence_model_cache_path
         else:
             self.word_cooccurrence_model_cache_path = os.path.join(cur_dir, word_cooccurrence_model_cache_path)
+        self.word_cooccurrence_model_window_length = word_cooccurrence_config["window_length"]

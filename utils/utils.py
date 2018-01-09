@@ -33,6 +33,7 @@ def remove_wild_char_in_news(news):
     news.content = remove_wild_char(news.content)
     news.abstract = remove_wild_char(news.abstract)
     news.keywords = remove_wild_char(news.keywords)
+    news.media_name = news.media_name.strip()[:19]
     for review in news.reviews:
         remove_wild_char_in_review(review)
 
@@ -40,7 +41,6 @@ def remove_wild_char_in_news(news):
 def remove_wild_char_in_review(review):
     review.content = remove_wild_char(review.content)
     review.user_name = remove_wild_char(review.user_name)
-    review.area = remove_wild_char(review.area)[-19:]
 
 
 def remove_new_line(s):
@@ -76,3 +76,13 @@ def replace_partial_list(l1, mat, t):
             for i in range(t):
                 l1[sout_idxes[i]] = in_vec[i]
             res.append(copy.deepcopy(res))
+
+
+def parse_timestr(timestr):
+    for time_format in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y/%m/%d %H:%M:%S', '%Y/%m/%d %H:%M']:
+        try:
+            time = datetime.datetime.strptime(timestr, time_format)
+            return time
+        except ValueError:
+            pass
+    raise ValueError()

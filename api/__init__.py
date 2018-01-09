@@ -95,7 +95,7 @@ def get_a_news():
     data = {'news_id': news_id, 'review_num': news_detail.review_num, 'word_num': news_detail.word_num,
             'abstract': news_detail.abstract, 'content': news_detail.content, 'keywords': news_detail.keywords,
             'title': news_detail.title, 'url': news_detail.url, 'id': news_detail.id,
-            'media_name': news_detail.media_name, 'time': news_detail.time, 'related_id': news_detail.related_id}
+            'media_name': news_detail.media_name, 'time': news_detail.time}
     print(data)
     datasources.get_db().close_session(session)
     return flask.jsonify(data)
@@ -103,7 +103,6 @@ def get_a_news():
 
 @app.route('/suggnew/recommend_news', methods=['GET'])
 def related_news():
-    # related_id = flask.request.args.get('related_id')
     source_id = flask.request.args.get('source_id')
 
     session = datasources.get_db().create_session()

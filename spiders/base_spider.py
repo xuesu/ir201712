@@ -74,7 +74,7 @@ class BaseSpider(abc.ABC):
             try:
                 # if not proxy:
                 time.sleep(delay_time)
-                with requests.get(url, headers=self.headers, timeout=30) as resp:
+                with requests.get(url, headers=self.headers, timeout=3) as resp:
                     return str(resp.content, encoding=encoding)
                     # .Session().
                     # else:

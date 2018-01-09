@@ -34,8 +34,25 @@ def gen_snippet(session, word_text_list, news_id, length=None):
     content = news.content
     stop_punc_list = {'。', '？', '！', '：', '；', '”', '“', '"', '…', '?', '!', '\n'}
     words = [('\n', 'x', 0)]
-    words += [(w[0], w[1], w[3]) for w in update.segment.tokenize(content, mode="search")
+    mid_words = [(w[0], w[1], w[3]) for w in update.segment.tokenize(content, mode="search")
               if w[0] in stop_punc_list or w[0] in word_text_list]
+    punc_near_words = [False] * len(mid_words)
+    for i, word in enumerate(mid_words):
+        punc_near_words[i] = True
+        if word[0] not in stop_punc_list:
+            for j in range(i + 1, len(mid_words)):
+                if mid_words[j][2] - word[2] < length:
+                    punc_near_words[j] = True
+                else:
+                    break
+            for j in range(i - 1, 0, -1):
+                if mid_words[j][2] - word[2] < length:
+                    punc_near_words[j] = True
+                else:
+                    break
+    mid_words = [mid_words[i] for i in range(len(mid_words)) if punc_near_words[i]]
+    del punc_near_words
+    words += mid_words
     word_num = len(words)
     words.append(('\n', 'x', len(content)))
     nums = dict()

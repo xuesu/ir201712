@@ -23,35 +23,12 @@ class IFengSpider(spiders.base_spider.BaseSpider):
         self.fenghuang_news_roll_url = r'http://news.ifeng.com/listpage/7837/{}/{}/rtlist.shtml'
         # docURL:sub_11111
         self.fenghuang_review_roll_url = r'http://comment.ifeng.com/get.php?callback=newCommentListCallBack&orderby=&docUrl={}&format=js&job=1&p=1&pageSize=20&callback=newCommentListCallBack&skey=e0d9fe'
-        self.fenghuang_num = 50000
         self.fenghuang_each_page_num = 60
 
     def get_news(self, news_num):
-        """
-        '获取如下数据：
-            '获取新闻数据：
-                source_id:新闻id,
-                url:新闻链接,
-                title:新闻标题,
-                keywords:新闻关键词,
-                media_name:发布媒体名称,
-                abstract:新闻摘要,
-                time:发布时间,
-                news_content:新闻内容,
-                review_num:评论条数
-            '相关新闻数据:related_id:相关的新闻id列表
-            '评论数据:
-                user_id:用户id,
-                user_name:用户昵称,
-                area:评论地点,
-                review_content:评论内容,
-                time:评论时间,
-                agree:点赞数
-        """
         session = datasources.get_db().create_session()
         news_count = 0
-        day_num = (news_num + self.fenghuang_each_page_num - 1) // self.fenghuang_each_page_num * 2
-        for delta_day in range(day_num):
+        for delta_day in range(news_num):
             date = utils.utils.get_date_before(delta_day)
             # 每天最多三页新闻：3*50
             for page_index in range(1):
@@ -83,6 +60,8 @@ class IFengSpider(spiders.base_spider.BaseSpider):
                         logger.warning('Crawling Roll Failed: {}.'.format(page_url))
                         continue
                     news_obj.url = news.a['href']
+                    if datasources.get_db().find_news_by_url(session, news_obj.url):
+                        continue
                     news_obj.title = news.a.text
                     news_obj.source = news_obj.SourceEnum.ifeng
                     try:
@@ -127,7 +106,6 @@ class IFengSpider(spiders.base_spider.BaseSpider):
                             for review in valid_vevs:
                                 review_obj = entities.review.ReviewPlain()
                                 review_obj.user_id = review['user_id']
-                                news_obj.source_id = review['article_id']
                                 review_obj.content = review['comment_contents']
                                 seconds = int(review['create_time'])
                                 review_obj.time = datetime.datetime.fromtimestamp(seconds)
@@ -136,7 +114,7 @@ class IFengSpider(spiders.base_spider.BaseSpider):
                                 review_obj.area = review['ip_from']
                                 news_obj.reviews.append(review_obj)
                         except Exception as e:  # 评论出错直接忽略
-                            logger.warning("Handling an invalid comment Failed.")
+                            logger.warning("An invalid comment.")
                     utils.utils.remove_wild_char_in_news(news_obj)
                     datasources.get_db().upsert_news_or_news_list(session, news_obj, commit_now=False)
                     news_count += 1
