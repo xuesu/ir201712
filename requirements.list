@@ -7,16 +7,12 @@ pymysql
 sqlalchemy
 simplejson
 jieba
-<<<<<<< HEAD
 pandas
 bs4
 requests
 redis
 gensim
 sklearn
-=======
 matplotlib
-pandas
 bs4
 demjson
->>>>>>> 487402c0091bf0c6e8245ef5a9071bef3f6dcccc
