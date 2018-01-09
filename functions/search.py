@@ -117,6 +117,9 @@ def universal_search(session, search_text, ranking, page, num_in_page=10):
     segment_word_4_search_list += regex_search_list
     segment_word_4_search_list = list(set(segment_word_4_search_list))
     print('segment for search: ', segment_word_4_search_list)
+
+    key = segment_word_4_search_list
+
     ranking_set = search(segment_word_4_search_list, ranking)
     if ranking != RELEVENCE_RANKING:
         ranking_set = datasources.get_db().find_news_time_and_review_num_by_id(session, ranking_set)

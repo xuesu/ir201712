@@ -25,8 +25,6 @@ class SpiderManagerTest(test.TestCase):
 
     def test_crawl(self):  # TODO: how to update indexes meanwhile crawling
         db = datasources.get_db()
-        db.recreate_all_tables()
         session = db.create_session()
         self.spider_manager.crawl(num=4)
-        self.assertIsNotNone(db.find_news_list(session))
-        db.recreate_all_tables()
+        self.assertIsNot(len(db.find_news_list(session)), 0)

@@ -6,7 +6,10 @@
 import threading
 
 import my_exceptions.base_exception
+import spiders.ifeng_spider
 import spiders.sina_spider
+import spiders.tencent_spider
+import spiders.toutiao_spider
 import utils.decorator
 
 
@@ -14,7 +17,10 @@ import utils.decorator
 class SpiderManager(object):
     def __init__(self):
         self.spiders = {
-            "sina": spiders.sina_spider.SinaSpider()
+            "sina": spiders.sina_spider.SinaSpider(),
+            "tencent": spiders.tencent_spider.TencentSpider(),
+            "toutiao": spiders.toutiao_spider.ToutiaoSpider(),
+            "ifeng": spiders.ifeng_spider.IFengSpider()
         }
 
     def crawl(self, num=None, numbers=None):
