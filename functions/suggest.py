@@ -15,7 +15,7 @@ import utils.decorator
 import utils.utils
 import datasources
 import update.similar_text
-
+import update.segment
 
 @utils.decorator.timer
 def suggest_autocomplete(word_regex_list, num=None):
@@ -67,33 +67,37 @@ def suggest_similar_search(word_regex_list, num=None):
             candidates_groups.append([candidate] + filters.filter_by_random(other_words, length - 1))
     return filters.filter_by_coocurrence(candidates_groups, num)
 
-
+@utils.decorator.timer
 def suggest_similar_news(session, source_id):
     redis_op = datasources.get_redis().redis_op()
-    news_abstract = datasources.get_db().find_news_abstract_by_source_id(session, source_id)
-    print('news_absgtract:', type(news_abstract))
-    redis_op.delete('similar_news_from_hot_news')
+    test_news = datasources.get_db().find_news_abstract_and_content_by_source_id(session, source_id)
+    test_data = []
+    if test_news.abstract is None:
+        for w, pos, start, end in update.segment.tokenize(test_news.content):
+            if pos.startswith('n'):
+                test_data.append(w)
+
     if redis_op.exists('similar_news_from_hot_news'):
-            return suggest_similar_news_select(redis_op, news_abstract)
+            return suggest_similar_news_predict(redis_op, test_news.abstract or test_data, True if test_news is None else False)
 
     p = redis_op.lrange('hot_news_list', 0, -1)
     p = [u.replace('\'', '"').replace('None', 'null') for u in p]
 
     p = [json.loads(u) for u in p]
-    print(type(p[0]['abstract']))
-    raw_text = [ u['abstract'] for u in p]
-
-    update.similar_text.corpora_process(raw_text)
+    raw_corpora = [u['abstract'] for u in p]
+    update.similar_text.corpora_process(raw_corpora)
 
     redis_op.set('similar_news_from_hot_news', 1)
-    return suggest_similar_news_select(redis_op, news_abstract[0])
+    return suggest_similar_news_predict(redis_op, test_news.abstract or test_data, True if test_news is None else False)
 
+@utils.decorator.timer
+def suggest_similar_news_predict(redis_op, news_abstract, cutted):
+    r = update.similar_text.similarity_id(news_abstract, cutted)
 
-def suggest_similar_news_select(redis_op, news_abstract):
-    r = update.similar_text.similarity_id(news_abstract)
-    r = r[1: -1]
     if len(r) == 0:
         return [{'source_id': None, 'title': '没有相似新闻可推荐'}]
+    if r[0][1] == 1.0:
+        r = r[1:]
     try:
         p = list()
         p += [redis_op.lrange('hot_news_list', u[0], u[0]) for u in r]
@@ -104,7 +108,7 @@ def suggest_similar_news_select(redis_op, news_abstract):
     except:
         return [{'source_id': None, 'title': '没有相似新闻可推荐'}]
 
-
+@utils.decorator.timer
 def suggest_hot_news(session, page):
     """
     check that documents in redis(cache) is not expired 
@@ -119,8 +123,9 @@ def suggest_hot_news(session, page):
     if EXPIRED:
         r = datasources.get_db().find_hot_news(session, 100)
 
-        cache = [{'title': news.title, 'abstract': news.abstract, 'time': str(news.time),
-                  'keywords': news.keywords, 'source_id': news.source_id} for news in r]
+        cache = [{'title': news.title.replace('"', '“').replace('\'', '“'),
+                  'abstract': news.abstract.replace('"', '“').replace('\'', '“'), 'time': str(news.time),
+                  'keywords': news.keywords.replace('"', '“').replace('\'', '“'), 'source_id': news.source_id} for news in r]
         # we should cache the variable cache into redis.
         redis_op.lpush('hot_news_list', *cache)
         redis_op.expire('hot_news_list', config.cache_config.expire)
@@ -138,8 +143,10 @@ def suggest_hot_news(session, page):
             candidate = redis_op.lrange('hot_news_list', (page-1)*10, -1)
         else:
             candidate = redis_op.lrange('hot_news_list', (page-1)*10, page*10)
+
         candidate = [u.replace('\'', '"').replace('None', 'null') for u in candidate]
-        candidate = [json.loads(u) for u in candidate]
+
+        candidate = [json.loads(u) for u in candidate]  # FIXME json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 18 (char 17)
         return candidate
 
 if __name__ == '__main__':

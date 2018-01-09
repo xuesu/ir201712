@@ -25,7 +25,7 @@ def corpora_process(raw_corpora):
 
 
 # 使用LSI模型进行相似度计算
-def similarity_id(test_data, feature_nums=400,similarity_nums=5):
+def similarity_id(test_data, cutted=False, feature_nums=400,similarity_nums=5):
     '''
     :param feature_nums: 相似度函数中所需要的特征数目
     :param similarity_nums: 返回的相似文档数目
@@ -49,9 +49,11 @@ def similarity_id(test_data, feature_nums=400,similarity_nums=5):
     # similarity_lsi = similarities.Similarity.load('Similarity-LSI-index.0')
 
     # 测试
-    print()
-    test_data_cut = list(jieba.cut(test_data))
-
+    if cutted is False:
+        test_data_cut = list(jieba.cut(test_data))
+    else:
+        test_data_cut = test_data
+    print(test_data_cut)
     dictionary = gensim.corpora.Dictionary.load('./models/dictionary.mtx')
     test_data_vector = dictionary.doc2bow(test_data_cut)
     test_data_tfidf = tf_idf_model[test_data_vector]

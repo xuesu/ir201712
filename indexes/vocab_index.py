@@ -18,9 +18,9 @@ class VocabIndex(object):
         datasources.get_db().close_session(self.session)
 
     def init(self, force_refresh=False):
-        words = datasources.get_db().find_word_list(self.session)
-        print('typeof words', type(words))
-        self.vocab = {word.text: word for word in words}
+        if self.vocab is None:
+            words = datasources.get_db().find_word_list(self.session)
+            self.vocab = {word.text: word for word in words}
 
     @utils.decorator.timer
     def build(self):

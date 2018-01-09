@@ -55,13 +55,13 @@ def search():
     data['result_list_2'] = []
     for r in data['result_list']:
         r['fake_url'] = '/news?news_id=' + r['news_id']
-        data['result_list_2'].append({'id': r['id'], 'good_search_mode': data['good_search_mode']})
+        data['result_list_2'].append({'id': r['id'], 'good_search_mode': data['good_search_mode'][0]})
     data['currentpage'] = int(paras['page'])
     data['pages'] = 10 if data['results_count']/10 > 10 else data['results_count']/10 + 1
     data['query'] = request.args.get('query')
     data['time_cost'] = time.time() - _start_t
     data['sortby'] = paras['ranking-by']
-    print 'search result: ', data
+
     data['result_list_2'] = json.dumps(data['result_list_2'])
     return render_template('result.html', data=data)
 
@@ -73,7 +73,7 @@ def get_snippet():
         return
     search_text = request.args.get('search_text')
     resp = requests.get(URL + "/snippet", {'news_id': _id, 'search_text': search_text})
-    print 'snippet: ', json.loads(resp.content)
+
     return resp.content
 
 
@@ -81,7 +81,7 @@ def get_snippet():
 def recommend_searchwords():
     search_text = request.args.get('search_text')
     resp = requests.get(URL + '/similar_search', {'search_text': search_text})
-    print 'recommend search words:', json.loads(resp.content)
+
     return resp.content
 
 
@@ -99,7 +99,7 @@ def news():
     """
     news_id = request.args.get('news_id', 'fake-0000')
     resp = requests.get(URL + '/news', {'news_id': news_id})
-    print 'detail of the news: ', json.loads(resp.content)
+
     return render_template('news_preview.html', data=json.loads(resp.content))
 
 
@@ -117,7 +117,7 @@ def recommend_news():
         if related_id.strip() == "":
             return
         resp = requests.get(URL + '/suggnew/recommend_news', {'related_id':related_id})
-        print 'recommend news and their source id', json.loads(resp.content)
+
         data = json.loads(resp.content)
         for r in data['content']:
             r['fake_url'] = "/news?news_id=" + r['source_id']
@@ -187,7 +187,7 @@ def hotnews():
     resp = requests.get(URL + '/suggnew/hotnews', {'page': page})
 
     data = json.loads(resp.content)['content']
-    print 'hot news: ', data
+
     for r in data:
         r['news_id'] = r.pop('source_id')
         r['fake_url'] = '/news?news_id=' + r['news_id']

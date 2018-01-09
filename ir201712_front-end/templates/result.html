@@ -187,6 +187,9 @@
                 </div>
                 </a>
                 <span>这里放相关搜索推荐:</span>
+                {% for r in data.good_search_mode[1] %}
+                <a href="?query={{ r }}">{{r}}&nbsp;&nbsp;&nbsp;</a>
+                {% endfor %}
             </div>
         </div>
         <div class="p" id="pagebar_container">
@@ -357,7 +360,7 @@
         $('body').append(node);
     </script>
     <script>
-        $.getJSON('/suggnew/recommend_searchwords?search_text=' + "{{data.good_search_mode}}", function (data) {
+        $.getJSON('/suggnew/recommend_searchwords?search_text=' + "{{data.good_search_mode[0]}}", function (data) {
             var content = data.content;
             content.forEach(function (e) {
                 e.forEach(function (c) {

@@ -159,8 +159,9 @@ class MySQLDataSource(object):
         return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
                                    entities.news.NewsPlain.content], pandas_format=True)
 
-    def find_news_abstract_by_source_id(self, session, source_id):
-        return self.find(session, entities.news.NewsPlain.abstract, filter_by_condition={'source_id': source_id}, first=True)
+    def find_news_abstract_and_content_by_source_id(self, session, source_id):
+        return self.find(session, [entities.news.NewsPlain.abstract,
+                         entities.news.NewsPlain.content], filter_by_condition={'source_id': source_id}, first=True)
 
     def find_news_brief_by_id(self, session, id_list):
         return self.find(session, [entities.news.NewsPlain.source, entities.news.NewsPlain.source_id,
