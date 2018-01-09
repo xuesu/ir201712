@@ -14,16 +14,18 @@ import re
 def get_date_before(shift=0):
     # 返回当前日期shift天后的日期，正数代表将来，负数代表过去，格式：‘2017-11-15’
     now_time = datetime.datetime.now()
-    date = now_time + datetime.timedelta(days=shift)
+    date = now_time - datetime.timedelta(days=shift)
     return date.strftime('%Y-%m-%d')
 
 
 def remove_wild_char(s):
-    s = re.sub(r"[^\s\w`=\\;.!/_,$^*+\"\'\[\]—！，。？、~@#￥%…&（）：；《》“”()»〔〕?\-]", "", s)
-    s = re.sub("\r", "\n", s)
-    s = re.sub("\n\n", "\n", s)
-    s = re.sub("\n +", "\n", s)
-    return s.strip()
+    if s is not None:
+        s = re.sub(r"[^\s\w`=\\;.!/_,$^*+\"\'\[\]—！，。？、~@#￥%…&（）：；《》“”()»〔〕?\-]", "", s)
+        s = re.sub("\r", "\n", s)
+        s = re.sub("\n\n", "\n", s)
+        s = re.sub("\n +", "\n", s)
+        return s.strip()
+    return ''
 
 
 def remove_wild_char_in_news(news):
@@ -37,6 +39,8 @@ def remove_wild_char_in_news(news):
 
 def remove_wild_char_in_review(review):
     review.content = remove_wild_char(review.content)
+    review.user_name = remove_wild_char(review.user_name)
+    review.area = remove_wild_char(review.area)[-19:]
 
 
 def remove_new_line(s):
