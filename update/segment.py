@@ -31,9 +31,7 @@ def tokenize(unicode_sentence, mode="default", HMM=True):
     if mode == 'default':
         for w, pos in jieba.posseg.cut(unicode_sentence, HMM=HMM):
             width = len(w)
-            word = (w, pos, start, start + width)
-            if not is_stop_word(word):
-                yield word
+            yield (w.lower(), pos, start, start + width)
             start += width
     else:
         for w, pos in jieba.posseg.cut(unicode_sentence, HMM=HMM):  # cut for searching?
@@ -42,20 +40,20 @@ def tokenize(unicode_sentence, mode="default", HMM=True):
                 for i in range(len(w) - 1):
                     gram2 = w[i:i + 2]
                     if jieba.posseg.dt.FREQ.get(gram2):
-                        word = (gram2, pos, start + i, start + i + 2)
-                        if not is_stop_word(word):
-                            yield word
+                        yield (gram2.lower(), pos, start + i, start + i + 2)
             if len(w) > 3:
                 for i in range(len(w) - 2):
                     gram3 = w[i:i + 3]
                     if jieba.posseg.dt.FREQ.get(gram3):
-                        word = (gram3, pos, start + i, start + i + 3)
-                        if not is_stop_word(word):
-                            yield word
-            word = (w, pos, start, start + width)
-            if not is_stop_word(word):
-                yield word
+                        yield (gram3.lower(), pos, start + i, start + i + 3)
+            yield (w.lower(), pos, start, start + width)
             start += width
+
+
+def tokenize_filter_stop(unicode_sentence, mode="default", HMM=True):
+    for token in tokenize(unicode_sentence, mode, HMM):
+        if not is_stop_word(token):
+            yield token
 
 
 @utils.decorator.timer
@@ -74,24 +72,23 @@ def cut4db(rdd):
         :return: a list, each element is a tuple (word, dict saved its position)
         """
         words = dict()
-        for word, pos_tag, position, _ in tokenize(r.title):
+        for word, pos_tag, position, _ in tokenize_filter_stop(r.content):
             if word not in words:
                 words[word] = [pos_tag, r.id, 0, 0]
             words[word][-2] += 1
-        for word, pos_tag, position, _ in tokenize(r.content):
+        for word, pos_tag, position, _ in tokenize_filter_stop(r.title):
             if word not in words:
                 words[word] = [pos_tag, r.id, 0, 0]
             words[word][-1] += 1
-        return [(k, words[k]) for k in words.keys()]
+        return [(k, words[k] if words[k][-1] > 0 else words[k][:-1]) for k in words.keys()]
 
     def segment_map2(r):
         import entities.words
-        word = entities.words.Word(text=r[0], df=0, cf=0, posting=dict())
+        word = entities.words.Word(text=r[0], cf=0, posting=dict())
         for record in r[1]:
             word.pos = record[0]
-            word.cf += record[-1]
-            word.df += 1
             word.posting[record[1]] = record[2:]
+        word.cf = sum(sum(v) for v in word.posting.values())
         return word
 
     return rdd.flatMap(segment_map).groupByKey().map(segment_map2).collect()

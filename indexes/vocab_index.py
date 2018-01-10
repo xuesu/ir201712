@@ -21,10 +21,10 @@ class VocabIndex(object):
     def build(self):
         pass
 
-    def collect(self, id_list):
+    def collect(self, text_list):
         if self.vocab is None:
             self.init()
-        if isinstance(id_list, list):
-            return [self.vocab.get(text) for text in id_list]
+        if isinstance(text_list, list) or isinstance(text_list, set):
+            return [self.vocab.get(text) for text in text_list if text in self.vocab]
         else:
-            return self.vocab.get(id_list)
+            return self.vocab.get(text_list)

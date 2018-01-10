@@ -152,18 +152,18 @@ class MySQLDataSource(object):
     def find_news_list(self, session):
         return self.find(session, entities.news.NewsPlain)
 
-    def find_news_by_id(self, session, id):
-        return self.find(session, entities.news.NewsPlain, filter_by_condition={"id": id}, first=True)
+    def find_news_by_news_id(self, session, news_id):
+        return self.find(session, entities.news.NewsPlain, filter_by_condition={"id": news_id}, first=True)
 
     def find_news_by_url(self, session, url):
         return self.find(session, entities.news.NewsPlain, filter_by_condition={"url": url}, first=True)
 
     def find_news_plain_text(self, session):
         return self.find(session, [entities.news.NewsPlain.id, entities.news.NewsPlain.title,
-                                   entities.news.NewsPlain.content], pandas_format=True)
+                                   entities.news.NewsPlain.content])
 
     def find_news_abstract_by_news_id(self, session, news_id):
-        return self.find(session, entities.news.NewsPlain.abstract, filter_by_condition={'news_id': news_id},
+        return self.find(session, entities.news.NewsPlain.abstract, filter_by_condition={'id': news_id},
                          first=True)
 
     def find_news_brief_by_news_id_list(self, session, id_list):
@@ -196,21 +196,44 @@ class MySQLDataSource(object):
                          )
 
     def find_reviews_by_news_id(self, session, news_id):
-        return self.find(session, entities.review.ReviewPlain, filter_by_condition={'news_id': news_id})
+        return self.find(session, entities.review.ReviewPlain, filter_by_condition={'id': news_id})
 
     def upsert_word_or_word_list(self, session, word, commit_now=True):
         return self.upsert_one_or_many(session, word, commit_now)
 
     def find_word_list(self, session):
-        return self.find(session, entities.words.Word, options=(sqlalchemy.orm.undefer("df"),
-                                                                sqlalchemy.orm.undefer("cf")))
+        return self.find(session, entities.words.Word)
 
     def find_word_id_by_text(self, session, text):
-        return self.find(session, entities.words.Word.id, filter_by_condition={"text": text}, first=True)
+        ans = self.find(session, entities.words.Word.id, filter_by_condition={"text": text}, first=True)
+        if ans is None:
+            return ans
+        return ans[0]
+
+    def find_word_by_text(self, session, text):
+        return self.find(session, entities.words.Word, filter_by_condition={"text": text}, first=True)
+
+    def merge_word(self, session, word, commit_now=True):
+        word2 = self.find_word_by_text(session, word.text)
+        if word2 is not None:
+            for k in word.posting:
+                if str(k) not in word2.posting:
+                    word2.posting[k] = word.posting[k]
+                    word2.cf += sum(word.posting[k])
+            self.upsert_word_or_word_list(session, word2, commit_now=commit_now)
+        else:
+            self.upsert_word_or_word_list(session, word, commit_now=commit_now)
+
+    def merge_word_list(self, session, words):
+        if isinstance(words, list):
+            for word in words:
+                self.merge_word(session, word, False)
+            self.commit_session(session)
+        else:
+            self.merge_word(session, words, True)
 
     def delete_word(self, session, word, commit_now=True):
         self.delete(session, word, commit_now)
 
     def find_word_plain_text_ordered_by_text(self, session):
-        ans = self.find(session, [entities.words.Word.text], order_by_condition="text")
-        return [a[0] for a in ans]
+        return [token[0] for token in self.find(session, entities.words.Word.text, order_by_condition="text")]

@@ -7,7 +7,7 @@ datasource:
   port: 0
   user: IRDBA
   password: complexpwd
-  database_name: ir
+  database_name: ir_mini
   test_database_name: ir_test
   pool_size: 50
   max_overflow: 100
@@ -17,6 +17,7 @@ spark:
   master: local
   app_name: ir
   spark.executorEnv.PYTHONHASHSEED: 0
+  spark.executor.memory: 4g
 functions:
   autocomplete:
     default_number: 3
@@ -41,6 +42,7 @@ indexes:
   word_cooccurrence:
     model_cache_path: models/word_cooccurrence
     window_length: 50
+    memo_length: 500
 cache:
   redis_host: localhost
   redis_port: 6379

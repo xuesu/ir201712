@@ -1,12 +1,11 @@
 import itertools
-import operator
 import os
 import pickle
 import math
 
 import config
 import datasources
-import update.segment
+import indexes
 import utils.decorator
 import utils.utils
 
@@ -20,39 +19,43 @@ class WordCoOccurrenceIndex(object):
             self.build()
         else:
             with open(config.indexes_config.word_cooccurrence_model_cache_path, 'rb') as fin:
-                pickle.load(self.model, fin)
+                self.model = pickle.load(fin)
 
     @utils.decorator.timer
     def build(self):
 
         @utils.decorator.run_executor_node
-        def build_mapPartition(data, length):
-            import datasources
+        def build_map(news_texts, length):
             import update.segment
-            session = datasources.get_db().create_session()
             ans = []
-            que = []
-            for news_texts in data:
-                for token in update.segment.tokenize(news_texts[1]):
-                    text = token[0]
-                    pos = token[1]
-                    word_id = datasources.get_db().find_word_id_by_text(text)
-                    if word_id is None:
-                        continue
-                    while que and que[0][3] < token[3] - length:
-                        que = que[1:]
-                    for word_id2, _ in que:
-                        if word_id < word_id2:
-                            ans.append((word_id, word_id2))
-                        else:
-                            ans.append((word_id, word_id2))
-                    que.append((word_id, pos))
-            datasources.get_db().close_session(session)
+            word_texts = [token[0] for token in update.segment.tokenize_filter_stop(news_texts[1])]
+            word_texts = [text for text in set(word_texts)]
+            word_texts.sort()
+            ans += itertools.combinations(word_texts, 2)
+            que = {}
+            tokens = [(token[0], token[3]) for token in update.segment.tokenize_filter_stop(news_texts[2])]
+            e = 0
+            for s in range(len(tokens)):
+                while e < len(tokens) and tokens[e][1] < tokens[s][1] + length:
+                    que[tokens[e][0]] = que.get(tokens[e][0], 0) + 1
+                    e += 1
+                for text2 in que:
+                    if text2 < tokens[s][0]:
+                        ans.append((text2, tokens[s][0]))
+                    elif text2 > tokens[s][0]:
+                        ans.append((tokens[s][0], text2))
+                if que[tokens[s][0]] > 1:
+                    que[tokens[s][0]] -= 1
+                else:
+                    que.pop(tokens[s][0])
+                s += 1
             return ans
 
         sqlsession = datasources.get_db().create_session()
-        train_data = config.get_spark_context().parallelize(datasources.get_db().find_news_plain_text(sqlsession))
-        datasources.get_db().close_session(sqlsession)
+        texts = datasources.get_db().find_news_plain_text(sqlsession)
+        part_num = (len(texts) + 99) // 100
+        train_data = config.get_spark_context().parallelize(texts, part_num)
+        del texts
 
         def merge_d_x(d, x):
             d[x] = d.get(x, 0) + 1
@@ -60,36 +63,35 @@ class WordCoOccurrenceIndex(object):
 
         def merge_d_d(d, d2):
             for x in d2:
-                d[x] = d.get(x) + d2[x]
+                d[x] = d.get(x, 0) + d2[x]
             return d
 
-        def log_to_list(d):
-            v = [(x, math.log(d[x])) for x in d]
-            del d
-            v.sort(key=lambda x: x[1], reverse=True)
-            return v
+        def reduce_d(d, length):
+            l = [(d[k], k) for k in d]
+            l.sort(reverse=True)
+            d = {k: math.log(v + 1) for v, k in l[:length]}
+            return d
 
-        self.model = train_data.mapPartition(
-            lambda data: build_mapPartition(data, config.indexes_config.word_cooccurrence_model_window_length))\
-            .combineByKey(lambda x: {x: 1}, merge_d_x, merge_d_d).mapValues(log_to_list).collect()
+        self.model = {k:v for k, v in train_data.flatMap(
+            lambda data: build_map(data, config.indexes_config.word_cooccurrence_model_window_length))\
+            .combineByKey(lambda x: {x: 1}, merge_d_x, merge_d_d)\
+            .mapValues(lambda d: reduce_d(d, config.indexes_config.word_cooccurrence_model_memo_length)).collect()}
+        datasources.get_db().close_session(sqlsession)
         if os.path.exists(config.indexes_config.word_cooccurrence_model_cache_path):
             os.remove(config.indexes_config.word_cooccurrence_model_cache_path)
         with open(config.indexes_config.word_cooccurrence_model_cache_path, 'wb') as fout:
             pickle.dump(self.model, fout)
 
-    def get_score(self, wid, other_wids):
-        if wid not in self.model:
-            return 0
-        for wid2, score in self.model[wid]:
-            if wid2 in other_wids:
-                return score
-
-    @utils.decorator.timer
-    def collect(self, word_id_list):
+    def collect(self, word_text_list):
         """
         :param word_id_list:
         :param num:
         :return:
         """
-        word_id_list = set(word_id_list)
-        return sum([self.get_score(wid, word_id_list) for wid in word_id_list])
+        word_text_list = set(word_text_list)
+        word_text_list = [word_text for word_text in word_text_list]
+        word_text_list.sort()
+        ans = 0
+        for i, text in enumerate(word_text_list):
+            ans += sum([self.model.get(text, {}).get(text2, 0) for text2 in word_text_list[i + 1:]])
+        return ans

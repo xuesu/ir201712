@@ -206,7 +206,6 @@ class WordTextIndex(object):
         if c is not None:
             self.tree.children[c] = tree_tmp.get_node()
 
-    @utils.decorator.timer
     def collect(self, s='', action=CollectionAction.PREFIX, threshold=None):
         if action == WordTextIndex.CollectionAction.PREFIX:
             return self.tree.collect_prefix(s)

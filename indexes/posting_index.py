@@ -22,15 +22,14 @@ class PostingIndex(object):
     def build(self):
         pass
 
-    @utils.decorator.timer
-    def collect(self, word_ids, action=LogicAction.OR):  # there is not inexact top K collecting method.
+    def collect(self, word_texts, action=LogicAction.OR):  # there is not inexact top K collecting method.
         ans = dict()
-        for word_id in word_ids:
-            word_posting = indexes.IndexHolder().vocab_index.collect(word_id).posting
+        for word_text in word_texts:
+            word_posting = indexes.IndexHolder().vocab_index.collect(word_text).posting
             for news_id in word_posting:
                 if news_id not in ans:
                     ans[news_id] = dict()
-                ans[news_id][word_id] = word_posting[news_id]
+                ans[news_id][word_text] = word_posting[news_id]
         if action == PostingIndex.LogicAction.AND:
-            ans = {news_id: ans[news_id] for news_id in ans if len(ans[news_id]) == len(word_ids)}
+            ans = {news_id: ans[news_id] for news_id in ans if len(ans[news_id]) == len(word_texts)}
         return ans
