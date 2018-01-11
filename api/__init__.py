@@ -25,7 +25,7 @@ app = flask.Flask(config.API_config.app_name)
 def autocomplete():
     search_text = flask.request.args.get("search_text")
     search_text = utils.utils.remove_wild_char(search_text).lower()
-    word_regex_list = search_text.split(' ')
+    word_regex_list = [text for text in search_text.split(' ') if text]
     num = flask.request.args.get("number")
     if num is not None:
         num = int(num)
@@ -37,7 +37,7 @@ def autocomplete():
 def similar_search():
     search_text = flask.request.args.get("search_text")
     search_text = utils.utils.remove_wild_char(search_text).lower()
-    word_regex_list = search_text.split(' ')
+    word_regex_list = [text for text in search_text.split(' ') if text]
     num = flask.request.args.get("number")
     if num is not None:
         num = int(num)
@@ -61,7 +61,7 @@ def get_snippet():
     news_id = int(flask.request.args.get("news_id"))
     search_text = flask.request.args.get("search_text")
     search_text = utils.utils.remove_wild_char(search_text).lower()
-    word_regex_list = search_text.split(' ')
+    word_regex_list = [text for text in search_text.split(' ') if text]
     length = flask.request.args.get("length")
     if length is not None:
         length = int(length)
