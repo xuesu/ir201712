@@ -45,6 +45,15 @@ class IndexesTest(test.TestCase):
         word_text_samples.sort()
         self.assertListEqual(word_texts, word_text_samples)
 
+    def test_word_text_index2(self):
+        test.runSQL()
+        index = indexes.word_text_index.WordTextIndex()
+        index.init(force_refresh=True)
+        word_texts = index.collect()
+        word_texts.sort()
+        word_text_samples = datasources.get_db().find_word_plain_text_ordered_by_text(self.session)
+        self.assertListEqual(word_texts, word_text_samples)
+
     def test_word_text_index_prefix(self):
         word_text_samples = ["1000", "10", "001", "010", "0", "1", "01"]
         for word_text in word_text_samples:
