@@ -24,7 +24,7 @@ app = flask.Flask(config.API_config.app_name)
 @api.basic.exception_handler
 def autocomplete():
     search_text = flask.request.args.get("search_text")
-    search_text = utils.utils.remove_wild_char(search_text)
+    search_text = utils.utils.remove_wild_char(search_text).lower()
     word_regex_list = search_text.split(' ')
     num = flask.request.args.get("number")
     if num is not None:
@@ -36,7 +36,7 @@ def autocomplete():
 @api.basic.exception_handler
 def similar_search():
     search_text = flask.request.args.get("search_text")
-    search_text = utils.utils.remove_wild_char(search_text)
+    search_text = utils.utils.remove_wild_char(search_text).lower()
     word_regex_list = search_text.split(' ')
     num = flask.request.args.get("number")
     if num is not None:
@@ -60,7 +60,7 @@ def analyze_emotion4news():
 def get_snippet():
     news_id = int(flask.request.args.get("news_id"))
     search_text = flask.request.args.get("search_text")
-    search_text = utils.utils.remove_wild_char(search_text)
+    search_text = utils.utils.remove_wild_char(search_text).lower()
     word_regex_list = search_text.split(' ')
     length = flask.request.args.get("length")
     if length is not None:
@@ -137,8 +137,9 @@ def hotnews():
 
 
 def run():
-    config.spark_config.testing = True
-    config.spark_config.driver_mode = False
+    config.spark_config.testing = False
+    # Tell spark executor it is not a driver.
+    config.spark_config.driver_mode = True
     th = threading.Thread(target=api.basic.backdoor)
     th.start()
     # disable autoreload to enable TRUE DEBUG!

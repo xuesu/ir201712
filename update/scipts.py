@@ -60,6 +60,8 @@ def import_sql(news_sql_fname, review_sql_fname):
             sql_text = sql_text[len(prefix):-1]
             vs = eval(sql_text)
             review_obj = entities.review.ReviewPlain()
+            if vs[1] not in news_id2id:
+                continue
             review_obj.news_id = news_id2id[vs[1]]
             review_obj.user_id = vs[2]
             review_obj.user_name = vs[3]

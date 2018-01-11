@@ -33,8 +33,7 @@ class Updater(object):
         rdd = config.get_spark_context().parallelize(
             datasources.get_db().find_news_plain_text(self.sqlsession), partition_num)
         del tmp
-        words = update.segment.cut4db(rdd)
-        datasources.get_db().upsert_word_or_word_list(self.sqlsession, words)
+        update.segment.cut4db(rdd)
 
     @utils.decorator.timer
     def prepossess(self):

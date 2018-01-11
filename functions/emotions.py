@@ -13,7 +13,7 @@ import my_exceptions.emtions_exceptions
 
 
 def analyze_emotion4news(session, news_id):
-    news = datasources.get_db().find_news_by_id(session, news_id)
+    news = datasources.get_db().find_news_by_news_id(session, news_id)
     if news is None:
         raise my_exceptions.datasources_exceptions.NewsNotFoundException(news_id)
     ans = list()

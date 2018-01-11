@@ -32,12 +32,13 @@ class MySQLDataSource(object):
             self.drop_all_tables()
         self.create_all_tables()
         self.session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
+        self.scope_session_maker = sqlalchemy.orm.scoped_session(self.session_maker)
 
     def __del__(self):
         self.close_all_session()
 
     def create_session(self):
-        session = self.session_maker()
+        session = self.scope_session_maker()
         self.session_pool.append(session)
         return session
 

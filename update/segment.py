@@ -52,7 +52,7 @@ def tokenize(unicode_sentence, mode="default", HMM=True):
 
 def tokenize_filter_stop(unicode_sentence, mode="default", HMM=True):
     for token in tokenize(unicode_sentence, mode, HMM):
-        if not is_stop_word(token):
+        if len(token[0]) < 15 and len(token[1]) < 5 or not is_stop_word(token):
             yield token
 
 
@@ -91,4 +91,10 @@ def cut4db(rdd):
         word.cf = sum(sum(v) for v in word.posting.values())
         return word
 
-    return rdd.flatMap(segment_map).groupByKey().map(segment_map2).collect()
+    def saving_foreachPartition(words):
+        import datasources
+        session = datasources.get_db().create_session()
+        datasources.get_db().upsert_word_or_word_list(session, [word for word in words if word.df <= 1000])
+        datasources.get_db().close_session(session)
+
+    rdd.flatMap(segment_map).groupByKey().map(segment_map2).foreachPartition(saving_foreachPartition)
