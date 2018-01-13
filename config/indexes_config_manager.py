@@ -28,3 +28,4 @@ class IndexesConfig(object):
         else:
             self.word_cooccurrence_model_cache_path = os.path.join(cur_dir, word_cooccurrence_model_cache_path)
         self.word_cooccurrence_model_window_length = word_cooccurrence_config["window_length"]
+        self.word_cooccurrence_model_memo_length = word_cooccurrence_config["memo_length"]

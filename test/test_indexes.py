@@ -29,9 +29,9 @@ class IndexesTest(test.TestCase):
             datasources.get_db().upsert_word_or_word_list(self.session, entities.words.Word(text=word_text))
         index = indexes.vocab_index.VocabIndex()
         index.init()
-        self.assertIsNotNone(index.collect(1))
-        self.assertEqual(len(index.collect(1).posting), 0)
-        self.assertIsNone(index.collect(10))
+        self.assertIsNotNone(index.collect("1"))
+        self.assertEqual(len(index.collect("1").posting), 0)
+        self.assertIsNone(index.collect("a"))
 
     def test_word_text_index(self):
         word_text_samples = ["野猫", "野小猫", "野生小猫", "猫", "野狗", "豹猫", "小野猫",
@@ -43,6 +43,15 @@ class IndexesTest(test.TestCase):
         word_texts = index.collect()
         word_texts.sort()
         word_text_samples.sort()
+        self.assertListEqual(word_texts, word_text_samples)
+
+    def test_word_text_index2(self):
+        test.runSQL()
+        index = indexes.word_text_index.WordTextIndex()
+        index.init(force_refresh=True)
+        word_texts = index.collect()
+        word_texts.sort()
+        word_text_samples = datasources.get_db().find_word_plain_text_ordered_by_text(self.session)
         self.assertListEqual(word_texts, word_text_samples)
 
     def test_word_text_index_prefix(self):
@@ -91,18 +100,19 @@ class IndexesTest(test.TestCase):
         words_list = [entities.words.Word(text="a"), entities.words.Word(text="b")]
         words_list[0].posting = {1: [2, 3], 3: [0, 1]}
         words_list[1].posting = {1: [1, 1]}
-        words_list = datasources.get_db().upsert_word_or_word_list(self.session, words_list)
+        datasources.get_db().upsert_word_or_word_list(self.session, words_list)
         index = indexes.posting_index.PostingIndex()
         index.init(force_refresh=True)
-        self.assertEqual(len(index.collect([words_list[0].id, words_list[1].id], index.LogicAction.OR)), 2)
-        self.assertEqual(len(index.collect([words_list[0].id, words_list[1].id], index.LogicAction.AND)), 1)
+        self.assertEqual(len(index.collect(['a', 'b'], 1)), 2)
+        self.assertEqual(len(index.collect(['a', 'b'], 2)), 1)
 
     def test_word_cooccurrence_index(self):
-        news_content_list = ["Tom,Ann,Cindy,Dave", "Betty,Ann,Cindy,Cindy,Eve", "Eve,Eve,Fenn,Fenn"]
-        news_list = [entities.news.NewsPlain(source_id=source_id, content=content, title="") for source_id, content
-                     in enumerate(news_content_list)]
-        datasources.get_db().upsert_news_or_news_list(self.session, news_list)
+        word_content_list = [("ann", {1: [1], 2: [1]}), ("betty", {2: [1]}), ("cindy", {1: [1], 2: [1]}),
+                     ('eve', {2: [1], 3: [2]}), ('fenn', {3: [1]}), ("tom", {1: [1]}),
+                     ('title', {1: [1, 0], 2: [1, 0], 3:[1, 0]}), ('wifi', {1: [1, 0], 2: [1, 0], 3:[1, 0]})]
+        word_list = [entities.words.Word(text=e[0], posting=e[1]) for e in word_content_list]
+        datasources.get_db().upsert_word_or_word_list(self.session, word_list)
         index = indexes.word_cooccurrence_index.WordCoOccurrenceIndex()
         index.init(force_refresh=True)
-        self.assertEqual(index.collect(["Ann", "Betty", "Cindy"]), index.collect(["Betty", "Ann", "Cindy"]))
-        self.assertEqual(index.collect(["Ann", "Betty", "Cindy"]), index.collect(["Ann", "Cindy", "Dave"]))
+        self.assertEqual(index.collect(["ann", "betty", "cindy"]), index.collect(["betty", "ann", "cindy"]))
+        self.assertEqual(index.collect(["ann", "betty", "title"]), index.collect(["ann", "tom", "title"]))

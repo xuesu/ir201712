@@ -22,7 +22,7 @@ class IndexHolder(object):
         self.vocab_index = indexes.vocab_index.VocabIndex()
         self.word_text_index = indexes.word_text_index.WordTextIndex()
         self.word_coocurrence_index = indexes.word_cooccurrence_index.WordCoOccurrenceIndex()
-        self.init()
+        self.init(True)
 
     def init(self, force_refresh=False):
         self.posting_index.init(force_refresh)

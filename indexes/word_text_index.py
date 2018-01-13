@@ -192,21 +192,37 @@ class WordTextIndex(object):
         self.tree = Node()
         c = None
         tree_tmp = NodeTmp()
+        big_register = dict()
         register = dict()
         for i, word_text in enumerate(word_texts):
             if not word_text:
                 continue
             if word_text[0] != c:
                 if c is not None:
-                    self.tree.children[c] = tree_tmp.get_node()
+                    child = tree_tmp.get_node()
+                    self.tree.children[c] = child
+                    if len(child.children) > 0:
+                        c_str = tree_tmp.add_tostr()
+                        if c_str in big_register:
+                            self.tree.children[c] = big_register[c_str]
+                            del child
+                        else:
+                            big_register[c_str] = child
                 tree_tmp = NodeTmp()
                 register = dict()
                 c = word_text[0]
             tree_tmp.add(word_text[1:], register)
         if c is not None:
-            self.tree.children[c] = tree_tmp.get_node()
+            child = tree_tmp.get_node()
+            self.tree.children[c] = child
+            if len(child.children) > 0:
+                c_str = tree_tmp.add_tostr()
+                if c_str in big_register:
+                    self.tree.children[c] = big_register[c_str]
+                    del child
+                else:
+                    big_register[c_str] = child
 
-    @utils.decorator.timer
     def collect(self, s='', action=CollectionAction.PREFIX, threshold=None):
         if action == WordTextIndex.CollectionAction.PREFIX:
             return self.tree.collect_prefix(s)

@@ -12,25 +12,22 @@ class PostingIndex(object):
     def __init__(self):
         self.inited = True
 
-    class LogicAction(enum.Enum):
-        OR = 0
-        AND = 1
-
     def init(self, force_refresh=False):
         pass
 
     def build(self):
         pass
 
-    @utils.decorator.timer
-    def collect(self, word_ids, action=LogicAction.OR):  # there is not inexact top K collecting method.
+    def collect(self, word_texts, limit_num=1):  # there is not inexact top K collecting method.
         ans = dict()
-        for word_id in word_ids:
-            word_posting = indexes.IndexHolder().vocab_index.collect(word_id).posting
-            for news_id in word_posting:
+        for word_text in word_texts:
+            word = indexes.IndexHolder().vocab_index.collect(word_text)
+            if word is None:
+                continue
+            for news_id in word.posting:
                 if news_id not in ans:
                     ans[news_id] = dict()
-                ans[news_id][word_id] = word_posting[news_id]
-        if action == PostingIndex.LogicAction.AND:
-            ans = {news_id: ans[news_id] for news_id in ans if len(ans[news_id]) == len(word_ids)}
+                ans[news_id][word_text] = word.posting[news_id]
+        limit_num = min(limit_num, len(word_texts))
+        ans = {news_id: ans[news_id] for news_id in ans if len(ans[news_id]) >= limit_num}
         return ans

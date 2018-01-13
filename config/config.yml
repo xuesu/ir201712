@@ -17,6 +17,8 @@ spark:
   master: local
   app_name: ir
   spark.executorEnv.PYTHONHASHSEED: 0
+  spark.executor.memory: 4g
+  spark.executor.cores: 4
 functions:
   autocomplete:
     default_number: 3
@@ -41,6 +43,7 @@ indexes:
   word_cooccurrence:
     model_cache_path: models/word_cooccurrence
     window_length: 50
+    memo_length: 500
 cache:
   redis_host: localhost
   redis_port: 6379

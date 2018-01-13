@@ -6,7 +6,6 @@ be lazy, be in one script and use a standalone schema to test.
 """
 
 import datetime
-import pandas
 
 import datasources
 import entities.news
@@ -39,7 +38,7 @@ class DataSourceTest(test.TestCase):
             time=datetime.datetime.strptime("2017-10-30 11:31:05", "%Y-%m-%d %H:%M:%S"),
             agree=0)
         self.news_sample.reviews = [self.review_sample]
-        self.word_sample = entities.words.Word(text="江苏", pos="N", df=3, cf=3, posting={1: (3, 1)})
+        self.word_sample = entities.words.Word(text="江苏", pos="N", cf=4, posting={1: (3, 1)})
 
     def tearDown(self):
         datasources.get_db().close_session(self.session)
@@ -58,10 +57,10 @@ class DataSourceTest(test.TestCase):
         self.assertIsNotNone(news_list[0].reviews[0].news_id)
         self.assertEqual(news_list[0].reviews[0].content, self.news_sample.reviews[0].content)
 
-    def test_find_news_by_id(self):
+    def test_find_news_by_news_id(self):
         news = entities.news.NewsPlain()
         news = datasources.get_db().upsert_news_or_news_list(self.session, news)
-        news2 = datasources.get_db().find_news_by_id(self.session, news.id)
+        news2 = datasources.get_db().find_news_by_news_id(self.session, news.id)
         self.assertEqual(news.id, news2.id)
 
     def test_find_news_by_url(self):
@@ -71,11 +70,9 @@ class DataSourceTest(test.TestCase):
 
     def test_find_news_plain_text(self):
         datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
-        texts_df = datasources.get_db().find_news_plain_text(self.session)
-        self.assertTrue(isinstance(texts_df, pandas.DataFrame))
-        self.assertEqual(texts_df.shape, (1, 3))
-        self.assertEqual(texts_df.title[0], self.news_sample.title)
-        self.assertEqual(texts_df.content[0], self.news_sample.content)
+        texts = datasources.get_db().find_news_plain_text(self.session)
+        self.assertEqual(texts[0][1], self.news_sample.title)
+        self.assertEqual(texts[0][2], self.news_sample.content)
 
     def test_find_word_list(self):
         word_list = datasources.get_db().find_word_list(self.session)
@@ -105,3 +102,24 @@ class DataSourceTest(test.TestCase):
         word_texts = datasources.get_db().find_word_plain_text_ordered_by_text(self.session)
         word_text_samples.sort()
         self.assertListEqual(word_texts, word_text_samples)
+
+    def test_find_word_id_by_text(self):
+        self.news_sample = datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
+        word_id = datasources.get_db().upsert_word_or_word_list(self.session, self.word_sample).id
+        word2_id = datasources.get_db().find_word_id_by_text(self.session, self.word_sample.text)
+        self.assertEqual(word_id, word2_id)
+
+    def test_find_word_by_text(self):
+        self.news_sample = datasources.get_db().upsert_news_or_news_list(self.session, self.news_sample)
+        datasources.get_db().upsert_word_or_word_list(self.session, self.word_sample)
+        word2 = datasources.get_db().find_word_by_text(self.session, self.word_sample.text)
+        self.assertEqual(word2.df, self.word_sample.df)
+
+    def test_merge_word_list(self):
+        datasources.get_db().merge_word_list(self.session, entities.words.Word(text='test', cf=3,
+                                                                               posting={1: [1, 2]}))
+        word2 = datasources.get_db().find_word_by_text(self.session, 'test')
+        self.assertEqual(word2.cf, 3)
+        datasources.get_db().merge_word_list(self.session, entities.words.Word(text='test', cf=4,
+                                                                               posting={1: [2], 2: [2]}))
+        self.assertEqual(word2.cf, 5)

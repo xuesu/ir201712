@@ -4,14 +4,15 @@
 
 be lazy, be in one script
 """
-import datasources
 import functions.suggest
+import indexes
 import test
 
 
 class SuggestTest(test.TestCase):
     def setUp(self):
         test.runSQL()
+        indexes.IndexHolder().init(True)
 
     def tearDown(self):
         pass
@@ -22,10 +23,10 @@ class SuggestTest(test.TestCase):
 
     def test_suggest_similar_search(self):
         candidate_groups = functions.suggest.suggest_similar_search(["浙江", "毒苹果", "女士", "快递", "开门"], num=3)
-        self.assertEqual(len(candidate_groups[0]), 3)
+        self.assertEqual(len(candidate_groups), 3)
 
         candidate_groups = functions.suggest.suggest_similar_search(["浙江", "毒*果", "女士", "快递", "开门"], num=3)
-        self.assertEqual(len(candidate_groups[0]), 3)
+        self.assertEqual(len(candidate_groups), 3)
 
         candidate_groups = functions.suggest.suggest_similar_search(["BBBBBBBBBBBB", "UUUUUUUUUU"], num=3)
         self.assertEqual(len(candidate_groups), 0)

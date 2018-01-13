@@ -25,20 +25,20 @@ class FiltersTest(test.TestCase):
     def test_filter_by_avgtfidf(self):  # TODO: to be absorb
         word_text_samples = ["1000", "10", "001", "010", "0", "1", "01"]
         for i, word_text in enumerate(word_text_samples):
-            datasources.get_db().upsert_word_or_word_list(self.session,
-                                                          entities.words.Word(text=word_text, df=1, cf=i + 1))
+            datasources.get_db().upsert_word_or_word_list(self.session, entities.words.Word(
+                text=word_text, cf=i + 1, posting={1: i + 1}))
         self.assertEqual(filters.filter_by_avgtfidf(word_text_samples, 3), word_text_samples[-1: -4: -1])
 
     def test_filter_by_coocurrence(self):
-        word_text_samples = ["abate", "bolster", "buttress", "champion", "defend", "espouse", "support"]
-        for i, j in [(0, 1), (0, 2), (0, 3), (0, 2), (1, 2), (1, 3), (3, 4)]:
-            datasources.get_db().upsert_news_or_news_list(
-                self.session, entities.news.NewsPlain(
-                    title='', content=' '.join([word_text_samples[i], word_text_samples[j]])))
+        word_text_samples = ['ann', 'betty', 'cindy', 'eve', 'fenn', 'tom', 'wifi', 'title']
+        word_content_list = [("ann", {1: [1], 2: [1]}), ("betty", {2: [1]}), ("cindy", {1: [1], 2: [1]}),
+                     ('eve', {2: [1], 3: [2]}), ('fenn', {3: [1]}), ("tom", {1: [1]}),
+                     ('title', {1: [1, 0], 2: [1, 0], 3:[1, 0]}), ('wifi', {1: [1, 0], 2: [1, 0], 3:[1, 0]})]
+        word_list = [entities.words.Word(text=e[0], posting=e[1]) for e in word_content_list]
+        datasources.get_db().upsert_word_or_word_list(self.session, word_list)
         indexes.IndexHolder().word_coocurrence_index.init(force_refresh=True)
-        self.assertListEqual(
-            filters.filter_by_coocurrence(
-                [word_texts for word_texts in itertools.combinations(word_text_samples, 3)], 3),
-            [(word_text_samples[0], word_text_samples[1], word_text_samples[2]),
-             (word_text_samples[0], word_text_samples[1], word_text_samples[3]),
-             (word_text_samples[0], word_text_samples[2], word_text_samples[3])])
+        ans = [('ann', 'title', 'wifi'), ('cindy', 'title', 'wifi'), ('eve', 'title', 'wifi')]
+        candidates = filters.filter_by_coocurrence(
+            [word_texts for word_texts in itertools.combinations(word_text_samples, 3)], 3)
+        for i in range(3):
+            self.assertEqual(set(ans[i]), set(candidates[i]))

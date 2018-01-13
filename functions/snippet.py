@@ -27,7 +27,7 @@ def gen_snippet(session, word_text_list, news_id, length=None):
     if length is None:
         length = config.functions_config.snippet_max_length
     word_text_list = set(word_text_list)
-    news = datasources.get_db().find_news_by_id(session, news_id)
+    news = datasources.get_db().find_news_by_news_id(session, news_id)
     if news is None:
         raise my_exceptions.datasources_exceptions.NewsNotFoundException(news_id=news_id)
     abstract = news.abstract

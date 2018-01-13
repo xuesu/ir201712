@@ -27,7 +27,9 @@ def runSQL():
     sql_command = ''
 
     # Iterate over all lines in the sql file
+
     for line in sql_file:
+
         # Ignore comented lines
         if not line.startswith('--') and line.strip('\n'):
             # Append line to the command string

@@ -12,8 +12,11 @@ import entities.review
 class Word(entities.SQLALCHEMY_BASE):
     __tablename__ = 'words'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    text = sqlalchemy.Column(sqlalchemy.String(20), nullable=False, index=True)
-    df = sqlalchemy.Column(sqlalchemy.Integer)
+    text = sqlalchemy.Column(sqlalchemy.String(60), nullable=False, index=True)
     cf = sqlalchemy.Column(sqlalchemy.Integer)
     pos = sqlalchemy.Column(sqlalchemy.String(5))
-    posting = sqlalchemy.orm.deferred(sqlalchemy.Column(sqlalchemy.JSON, default=dict()))
+    posting = sqlalchemy.Column(sqlalchemy.JSON, default=dict())
+
+    @property
+    def df(self):
+        return len(self.posting)
