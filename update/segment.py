@@ -67,11 +67,6 @@ def cut4db(rdd):
     """
 
     def segment_map(r):
-        """
-        segment a news to 
-        :param r: news entity
-        :return: a list, each element is a tuple (word, dict saved its position)
-        """
         words = dict()
         for word, pos_tag, position, _ in tokenize_filter_stop(r.content):
             if word not in words:

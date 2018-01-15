@@ -167,19 +167,13 @@ class MySQLDataSource(object):
         return self.find(session, [entities.news.NewsPlain.abstract,
                          entities.news.NewsPlain.content], filter_by_condition={'id': id}, first=True)
 
-    def find_news_brief_by_news_id_list(self, session, id_list):
-        return self.find(session, [entities.news.NewsPlain.source, entities.news.NewsPlain.title,
-                                   entities.news.NewsPlain.time, entities.news.NewsPlain.id],
+    def find_news_title_and_time_by_id_list(self, session, id_list):
+        return self.find(session, [entities.news.NewsPlain.title, entities.news.NewsPlain.time, entities.news.NewsPlain.id],
                          filter_condition=entities.news.NewsPlain.id.in_(id_list))
 
-    def find_news_time_and_review_num_by_news_id_list(self, session, id_list):
+    def find_news_time_and_review_num_by_id_list(self, session, id_list):
         return self.find(session,
                          [entities.news.NewsPlain.id, entities.news.NewsPlain.time, entities.news.NewsPlain.review_num],
-                         filter_condition=entities.news.NewsPlain.id.in_(id_list),
-                         order_by_condition=sqlalchemy.desc(entities.news.NewsPlain.time))
-
-    def find_news_title_by_news_id_list(self, session, id_list):  # TODO: need to test
-        return self.find(session, [entities.news.NewsPlain.title],
                          filter_condition=entities.news.NewsPlain.id.in_(id_list))
 
     def find_hot_news(self, session, num, review_num=50, delta_day=100):  # FIXME: review_num >=50, delta time < 1d
@@ -197,7 +191,7 @@ class MySQLDataSource(object):
                          )
 
     def find_reviews_by_news_id(self, session, news_id):
-        return self.find(session, entities.review.ReviewPlain, filter_by_condition={'id': news_id})
+        return self.find(session, entities.review.ReviewPlain, filter_by_condition={'news_id': news_id})
 
     def upsert_word_or_word_list(self, session, word, commit_now=True):
         return self.upsert_one_or_many(session, word, commit_now)

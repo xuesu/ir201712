@@ -129,7 +129,7 @@
                         排序</p>
                 </div>
                 <div>
-                {% if data.currentpage == 1 %}
+                {% if data.currentpage == -1 %}
                     <div id="tip_out_box" style="width: 650px">
                         <div id="tip_header">
                         <div style="width:70px;float:left;">
@@ -194,20 +194,20 @@
         </div>
         <div class="p" id="pagebar_container">
         {% if data.currentpage > 1 %}
-            <a id="news_previous" href="?query={{ data.query }}&page={{ data.currentpage - 1 }}" class="np">上一页</a>
+            <a id="news_previous" href="?query={{ data.query }}&query2={{data.good_search_mode[0]}}&page={{ data.currentpage - 1 }}" class="np">上一页</a>
         {% else %}
-            <a id="news_previous" class="np" disabled="disabled">上一页</a>
+            <a id="news_previous" class="np" disabled>上一页</a>
         {% endif %}
 
             {% for p in range(1, data.pages + 1) %}
                 {% if p == data.currentpage %}
                 <span>{{ p }}</span>
                 {% else %}
-                <a id="news_page_{{ p }}" href="?query={{ data.query }}&page={{ p }}">{{ p }}</a>
+                <a id="news_page_{{ p }}" href="?query={{ data.query }}&query2={{data.good_search_mode[0]}}&page={{ p }}">{{ p }}</a>
                 {% endif %}
             {% endfor %}
             <span>{{ data.currentPage }}</span>
-            <a id="news_next" href="?query={{ data.query }}&page={{ data.currentpage + 1 }}" class="np">下一页</a>
+            <a id="news_next" href="?query={{ data.query }}&query2={{data.good_search_mode[0]}}&page={{ data.currentpage + 1 }}" class="np">下一页</a>
         </div>
     </div>
 <script>
@@ -360,6 +360,13 @@
         $('body').append(node);
     </script>
     <script>
+
+        var result_list = {{ data.result_list_2 | safe }};
+        result_list.forEach(function (e){
+            $.getJSON('/search/snippet?search_text=' + e.good_search_mode + '&id=' + e.id, function (data) {
+                $('#'+ e.id).text(data.content);
+            })
+        });
         $.getJSON('/suggnew/recommend_searchwords?search_text=' + "{{data.good_search_mode[0]}}", function (data) {
             var content = data.content;
             content.forEach(function (e) {
@@ -368,13 +375,6 @@
                 })
             })
         } );
-        var result_list = {{ data.result_list_2 | safe }};
-        result_list.forEach(function (e){
-            $.getJSON('/search/snippet?search_text=' + e.good_search_mode + '&id=' + e.id, function (data) {
-                $('#'+ e.id).text(data.content);
-            })
-        })
-
     </script>
 
 </body>

@@ -182,7 +182,8 @@ class WordTextIndex(object):
         SAMELENGTH = 2
 
     def init(self, force_refresh=False):
-        self.build()
+        if self.tree is None:
+            self.build()
 
     @utils.decorator.timer
     def build(self):

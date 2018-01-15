@@ -56,10 +56,11 @@ def suggest_similar_search(word_regex_list, num=None):
             candidates_groups.append([candidate] + other_words)
     return filters.filter_by_coocurrence(candidates_groups, num)
 
+
 @utils.decorator.timer
-def suggest_similar_news(session, source_id):
+def suggest_similar_news(session, _id):
     redis_op = datasources.get_redis().redis_op()
-    test_news = datasources.get_db().find_news_abstract_and_content_by_source_id(session, source_id)
+    test_news = datasources.get_db().find_news_abstract_and_content_by_id(session, _id)
     test_data = []
     if test_news.abstract is None:
         for w, pos, start, end in update.segment.tokenize(test_news.content):
@@ -86,7 +87,7 @@ def suggest_similar_news_predict(redis_op, news_abstract, cutted):
     r = update.similar_text.similarity_id(news_abstract, cutted)
 
     if len(r) == 0:
-        return [{'source_id': None, 'title': '没有相似新闻可推荐'}]
+        return [{'id': None, 'title': '没有相似新闻可推荐'}]
     if r[0][1] == 1.0:
         r = r[1:]
     try:
@@ -94,10 +95,10 @@ def suggest_similar_news_predict(redis_op, news_abstract, cutted):
         p += [redis_op.lrange('hot_news_list', u[0], u[0]) for u in r]
         p = [u[0].replace('\'', '"').replace('None', 'null') for u in p]
         p = [json.loads(u) for u in p]
-        ans = [{'news_id': u['id'], 'title': u['title']} for u in p]
+        ans = [{'id': u['id'], 'title': u['title']} for u in p]
         return ans
     except Exception as e:
-        return [{'news_id': None, 'title': '没有相似新闻可推荐'}]
+        return [{'id': None, 'title': '没有相似新闻可推荐'}]
 
 
 @utils.decorator.timer
@@ -115,10 +116,13 @@ def suggest_hot_news(session, page):
     if EXPIRED:
         r = datasources.get_db().find_hot_news(session, 100)
 
-        cache = [{'title': news.title.replace('"', '“').replace('\'', '“'),
-                  'abstract': news.abstract.replace('"', '“').replace('\'', '“'), 'time': str(news.time),
-                  'keywords': news.keywords.replace('"', '“').replace('\'', '“'), 'source_id': news.source_id} for news in r]
+        cache = [{'title': news.title.replace('"', '“').replace('\'', '“').replace('\n', ' ').replace('\xa0', ' '),
+                  'abstract': news.abstract.replace('"', '“').replace('\'', '“').replace('\n', ' ').replace('\xa0', ' '),
+                  'time': str(news.time),
+                  'keywords': news.keywords.replace('"', '“').replace('\'', '“').replace('\n', ' ').replace('\xa0', ' '),
+                  'id': news.id} for news in r]
         # we should cache the variable cache into redis.
+        print(cache)
         redis_op.lpush('hot_news_list', *cache)
         redis_op.expire('hot_news_list', config.cache_config.expire)
         redis_op.delete('similar_news_from_hot_news')
@@ -126,6 +130,7 @@ def suggest_hot_news(session, page):
             candidate = cache[:10]
         else:
             candidate = cache
+        print('here')
         return candidate
     else:  # to read redis.
         llen = redis_op.llen('host_news_list')
@@ -136,6 +141,8 @@ def suggest_hot_news(session, page):
         else:
             candidate = redis_op.lrange('hot_news_list', (page - 1) * 10, page * 10)
         candidate = [u.replace('\'', '"').replace('None', 'null') for u in candidate]
-
-        candidate = [json.loads(u) for u in candidate]  # FIXME json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 18 (char 17)
+        for u in candidate:
+            print(u)
+            json.loads(u)
+        candidate = [json.loads(u) for u in candidate]
         return candidate

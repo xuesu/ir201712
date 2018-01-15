@@ -17,19 +17,22 @@ class IndexHolder(object):
     """
 
     def __init__(self):
-        print('just for debug: starting to init IndexHolder.')
+
         self.posting_index = indexes.posting_index.PostingIndex()
         self.vocab_index = indexes.vocab_index.VocabIndex()
         self.word_text_index = indexes.word_text_index.WordTextIndex()
         self.word_coocurrence_index = indexes.word_cooccurrence_index.WordCoOccurrenceIndex()
-        self.init(True)
+        print('starting to initial...')
+        self.init()
 
+    @utils.decorator.timer
     def init(self, force_refresh=False):
+        print('starting to initial...  in init()')
         self.posting_index.init(force_refresh)
         self.vocab_index.init(force_refresh)
         self.word_text_index.init(force_refresh)
         self.word_coocurrence_index.init(force_refresh)
-        print('-----Init index_holder successfully!')
+        print('inited.')
 
     def build(self):
         self.posting_index.build()

@@ -10,6 +10,7 @@ import utils.decorator
 class VocabIndex(object):
     def __init__(self):
         self.vocab = None
+        self.session = datasources.get_db().create_session()
 
     def init(self, force_refresh=False):
         if self.vocab is None:

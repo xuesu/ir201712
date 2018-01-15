@@ -122,7 +122,7 @@
 
             })
         });
-        $.getJSON("/suggnew/recommend_news?source_id={{ data.news_id }}", function (data) {
+        $.getJSON("/suggnew/recommend_news?id={{ data.id }}", function (data) {
             content = data.content;
             content.forEach(function (e) {
                 var node = "<li><a href=" + e.fake_url + "><b>" + e.title + "</b></a></li>"
