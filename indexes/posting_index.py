@@ -21,7 +21,7 @@ class PostingIndex(object):
     def collect(self, word_texts, limit_num=1):  # there is not inexact top K collecting method.
         print('collecting posting....')
         ans = dict()
-        df = dict()
+
         for word_text in word_texts:
             word = indexes.IndexHolder().vocab_index.collect(word_text)
             if word is None:
@@ -30,8 +30,8 @@ class PostingIndex(object):
                 if news_id not in ans:
                     ans[news_id] = dict()
                 ans[news_id][word_text] = word.posting[news_id]
-            df[word_text] = word.df
+
         limit_num = min(limit_num, len(word_texts))  # beautiful code.
         ans = {news_id: ans[news_id] for news_id in ans if len(ans[news_id]) >= limit_num}
         print('collecting posting finished')
-        return ans, df
+        return ans
