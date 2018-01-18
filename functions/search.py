@@ -20,17 +20,22 @@ def bm25(idf, tf, fl=1, avgfl=1, B=0.75, K1=1.2):
 
 @utils.decorator.timer
 def search(session, word_text_list, ranking):
-    ans, df = indexes.IndexHolder().posting_index.collect(word_text_list, 2)  # the news at least contains 2 words
-    print('ans', ans, 'df', df)
+    ans = indexes.IndexHolder().posting_index.collect(word_text_list, 2)  # the news at least contains 2 words
+    df = dict()
     ranking_set = list()
     if ranking == RELEVENCE_RANKING:
         document_counts = len(ans)
         for news_id, words_in_news in ans.items():
+            for key in words_in_news.keys():
+                if key not in df:
+                    df[key] = 0
+                df[key] += 1
+        idf = {word: math.log(document_counts/(df[word] + 1)) + 1 for word in df.keys()}
+        for news_id, words_in_news in ans.items():
             bm25_score = 0
             for word, tf in words_in_news.items():
-                idf = math.log(document_counts/(df[word] + 1)) + 1
-                bm25_score += bm25(idf, tf[0])
-            ranking_set.append((news_id, bm25_score))
+                bm25_score += bm25(idf[word], sum(tf))
+            ranking_set.append((int(news_id), bm25_score))
     else:
         document_id_list = [news_id for news_id, v in ans.items()]
         r = datasources.get_db().find_news_time_and_review_num_by_id_list(session, document_id_list)
@@ -97,14 +102,14 @@ def universal_search(session, search_text, ranking, page, num_in_page=10):
     segment_word_4_search_list = list(set(segment_word_4_search_list))
     print('segment for search: ', segment_word_4_search_list)
     ranking_set = search(session, segment_word_4_search_list, ranking)
-    # import pdb
-    # pdb.set_trace()
+
     candidate_id_list = [u[0] for u in ranking_set[(page-1)*num_in_page: page*num_in_page]]
     if len(candidate_id_list) == 0:
         return 0, [], [' '.join(segment_word_4_search_list), partial_similar_search_list]
     result_list = [{'id': row.id,
                     'title': row.title,
                     'time': row.time} for row in datasources.get_db().find_news_title_and_time_by_id_list(session, candidate_id_list)]
+
     for r in result_list:
         for k, v in ranking_set[(page-1)*num_in_page: page*num_in_page]:
             if r.__contains__('score') is False and k == r['id']:
