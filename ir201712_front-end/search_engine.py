@@ -78,6 +78,7 @@ def get_snippet():
 def recommend_searchwords():
     search_text = request.args.get('search_text')
     resp = requests.get(URL + '/similar_search', {'search_text': search_text})
+    print(resp.content)
     return resp.content
 
 
