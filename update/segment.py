@@ -66,7 +66,7 @@ def cut4db(rdd):
     :return: 
     """
 
-    def segment_map(r):
+    def segment_map(r):  # (word, news_id, tf in content, tf in title if not 0)
         words = dict()
         for word, pos_tag, position, _ in tokenize_filter_stop(r.content):
             if word not in words:
