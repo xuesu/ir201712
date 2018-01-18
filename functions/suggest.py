@@ -114,7 +114,7 @@ def suggest_hot_news(session, page):
     EXPIRED = not redis_op.exists('hot_news_list')
     print('Expired:', EXPIRED)
     if EXPIRED:
-        r = datasources.get_db().find_hot_news(session, 100)
+        r = datasources.get_db().find_hot_news(session, 1000)
 
         cache = [{'title': news.title.replace('"', '“').replace('\'', '“').replace('\n', ' ').replace('\xa0', ' '),
                   'abstract': news.abstract.replace('"', '“').replace('\'', '“').replace('\n', ' ').replace('\xa0', ' '),
@@ -122,7 +122,7 @@ def suggest_hot_news(session, page):
                   'keywords': news.keywords.replace('"', '“').replace('\'', '“').replace('\n', ' ').replace('\xa0', ' '),
                   'id': news.id} for news in r]
         # we should cache the variable cache into redis.
-        print(cache)
+        # print(cache)
         redis_op.lpush('hot_news_list', *cache)
         redis_op.expire('hot_news_list', config.cache_config.expire)
         redis_op.delete('similar_news_from_hot_news')
@@ -130,7 +130,6 @@ def suggest_hot_news(session, page):
             candidate = cache[:10]
         else:
             candidate = cache
-        print('here')
         return candidate
     else:  # to read redis.
         llen = redis_op.llen('host_news_list')
@@ -141,8 +140,5 @@ def suggest_hot_news(session, page):
         else:
             candidate = redis_op.lrange('hot_news_list', (page - 1) * 10, page * 10)
         candidate = [u.replace('\'', '"').replace('None', 'null') for u in candidate]
-        for u in candidate:
-            print(u)
-            json.loads(u)
         candidate = [json.loads(u) for u in candidate]
         return candidate
